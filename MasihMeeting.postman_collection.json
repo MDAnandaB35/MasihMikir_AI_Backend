@@ -73,7 +73,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_id\": \"68871c854f3a887ae17ea67a\"\r\n}",
+					"raw": "{\r\n    \"_id\": \"688844aaf72fa25276c13aaf\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "text"
@@ -95,7 +95,7 @@
 			"response": []
 		},
 		{
-			"name": "Audio Transcription",
+			"name": "YouTube Transcription",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -153,6 +153,15 @@
 						"type": "text"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"url\" : \"https://www.youtube.com/watch?v=NpXkhwFiaF8&pp=ygUMem9vbSBtZWV0aW5n0gcJCccJAYcqIYzv\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
 				"url": {
 					"raw": "http://localhost:5000/youtube_subtitle_transcribe",
 					"protocol": "http",
@@ -350,6 +359,88 @@
 					"port": "5000",
 					"path": [
 						"video_to_audio_transcribe"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Audio Transcription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cache-Control",
+						"value": "no-cache",
+						"name": "cache-control",
+						"type": "text"
+					},
+					{
+						"key": "Postman-Token",
+						"value": "<calculated when request is sent>",
+						"name": "postman-token",
+						"type": "text"
+					},
+					{
+						"key": "Content-Length",
+						"value": "0",
+						"name": "content-length",
+						"type": "text"
+					},
+					{
+						"key": "Host",
+						"value": "<calculated when request is sent>",
+						"name": "host",
+						"type": "text"
+					},
+					{
+						"key": "User-Agent",
+						"value": "PostmanRuntime/7.39.1",
+						"name": "user-agent",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "*/*",
+						"name": "accept",
+						"type": "text"
+					},
+					{
+						"key": "Accept-Encoding",
+						"value": "gzip, deflate, br",
+						"name": "accept-encoding",
+						"type": "text"
+					},
+					{
+						"key": "Connection",
+						"value": "keep-alive",
+						"name": "connection",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"filename\" : \"\"\r\n    \"language\" : \"en\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/whisper_file_transcribe",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"whisper_file_transcribe"
 					]
 				}
 			},

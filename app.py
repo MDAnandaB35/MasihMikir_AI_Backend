@@ -2,6 +2,7 @@
 from flask import Flask, request, jsonify
 import os
 import tempfile
+import requests
 import yt_dlp
 import openai
 import asyncio
@@ -13,11 +14,13 @@ load_dotenv()
 from bson import ObjectId
 import json
 import subprocess
+import re
 
 app = Flask(__name__)
 
 # Initializing environment variables
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
 AUDIO_FOLDER = os.environ.get('AUDIO_FOLDER', 'audio_files')  # Default folder for audio files
 VIDEO_FOLDER = os.environ.get('VIDEO_FOLDER', 'video_files')
 TRANSCRIPTS_FOLDER = os.environ.get('TRANSCRIPTS_FOLDER', 'transcripts')
@@ -190,9 +193,33 @@ def transcribe_audio_file(filename, language='en'):
     inserted_id = save_transcription_to_mongodb(doc)
     return transcription
 
+# Uncomment if want to use OpenAI instead (paid method)
 # Summarizing text using OpenAI
-def summarize_text(text, api_key, model='gpt-3.5-turbo', max_tokens=1024):
-    client = openai.OpenAI(api_key=api_key)
+# def summarize_text(text, api_key=OPENAI_API_KEY, model='gpt-3.5-turbo', max_tokens=1024):
+#     client = openai.OpenAI(api_key=api_key)
+#     prompt = (
+#         "You are a professional meeting summarizer. "
+#         "Read the following meeting transcript and produce a detailed, structured summary. "
+#         "Organize the summary into bullet points grouped by main topics. "
+#         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
+#         "Be as specific and complete as possible, including names or roles if mentioned. "
+#         "Make the summary clear and useful for someone who did not attend the meeting. "
+#         "\n\nMeeting transcript:\n" + text
+#     )
+#     response = client.chat.completions.create(
+#         model=model,
+#         messages=[
+#             {"role": "system", "content": "You are a helpful assistant."},
+#             {"role": "user", "content": prompt}
+#         ],
+#         max_tokens=max_tokens,
+#         temperature=0.5,
+#     )
+#     return response.choices[0].message.content.strip()
+
+# Use this for free ai model from OpenRouter (but slow)
+# Summarizing text using DeepSeek
+def summarize_text(text, deepseek_api_key=DEEPSEEK_API_KEY, model='deepseek/deepseek-r1-0528:free', max_tokens=1024):
     prompt = (
         "You are a professional meeting summarizer. "
         "Read the following meeting transcript and produce a detailed, structured summary. "
@@ -202,19 +229,115 @@ def summarize_text(text, api_key, model='gpt-3.5-turbo', max_tokens=1024):
         "Make the summary clear and useful for someone who did not attend the meeting. "
         "\n\nMeeting transcript:\n" + text
     )
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
+
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {deepseek_api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": model,
+        "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=max_tokens,
-        temperature=0.5,
-    )
-    return response.choices[0].message.content.strip()
+        "temperature": 0.5
+    }
 
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+    if response.status_code == 200:
+        result = response.json()
+        return result["choices"][0]["message"]["content"].strip()
+    else:
+        raise Exception(f"Error {response.status_code}: {response.text}")
+
+
+# Generating quiz with OpenAI
 # Generating Quiz
-def generate_mcqs(text_content, quiz_level, api_key=OPENAI_API_KEY, model="gpt-3.5-turbo"): 
+# def generate_mcqs(text_content, quiz_level, api_key=OPENAI_API_KEY, model="gpt-3.5-turbo"): 
+#     RESPONSE_JSON = {
+#       "mcqs" : [
+#         {
+#             "mcq": "multiple choice question1",
+#             "options": {
+#                 "a": "choice here1",
+#                 "b": "choice here2",
+#                 "c": "choice here3",
+#                 "d": "choice here4",
+#             },
+#             "correct": "correct choice option in the form of a, b, c or d",
+#         },
+#         {
+#             "mcq": "multiple choice question",
+#             "options": {
+#                 "a": "choice here",
+#                 "b": "choice here",
+#                 "c": "choice here",
+#                 "d": "choice here",
+#             },
+#             "correct": "correct choice option in the form of a, b, c or d",
+#         },
+#         {
+#             "mcq": "multiple choice question",
+#             "options": {
+#                 "a": "choice here",
+#                 "b": "choice here",
+#                 "c": "choice here",
+#                 "d": "choice here",
+#             },
+#             "correct": "correct choice option in the form of a, b, c or d",
+#         }
+#       ]
+#     }
+
+#     PROMPT_TEMPLATE="""
+#     Text: {text_content}
+#     You are an expert in generating MCQ type quiz on the basis of provided content. 
+#     Given the above text, create a quiz of 3 multiple choice questions keeping difficulty level as {quiz_level}. 
+#     Make sure the questions are not repeated and check all the questions to be conforming the text as well.
+#     Make sure to format your response like RESPONSE_JSON below and use it as a guide.
+#     Ensure to make an array of 3 MCQs referring the following response json.
+#     Here is the RESPONSE_JSON: 
+
+#     {RESPONSE_JSON}
+
+#     """
+
+#     formatted_template = PROMPT_TEMPLATE.format(text_content=text_content, quiz_level=quiz_level, RESPONSE_JSON=RESPONSE_JSON)
+
+#     client = openai.OpenAI(api_key=api_key)
+#     response = client.chat.completions.create(
+#         model=model,
+#         messages=[
+#             {
+#                 "role": "user",
+#                 "content" : formatted_template
+#             }
+#         ],
+#         temperature=0.3,
+#         max_tokens=1000,
+#         top_p=1,
+#         frequency_penalty=0,
+#         presence_penalty=0
+#     )
+
+#     extracted_response = response.choices[0].message.content
+#     try:
+#         mcqs = json.loads(extracted_response).get("mcqs", [])
+#     except Exception:
+#         # Try to extract JSON from the response if not directly parsable
+#         import re
+#         match = re.search(r'\{[\s\S]*\}', extracted_response)
+#         if match:
+#             mcqs = json.loads(match.group()).get("mcqs", [])
+#         else:
+#             mcqs = []
+#     return mcqs
+
+# Generating quiz with OpenRouter Deepseek
+def generate_mcqs(text_content, quiz_level, deepseek_api_key=DEEPSEEK_API_KEY, model="deepseek/deepseek-r1-0528:free"):
     RESPONSE_JSON = {
       "mcqs" : [
         {
@@ -250,50 +373,61 @@ def generate_mcqs(text_content, quiz_level, api_key=OPENAI_API_KEY, model="gpt-3
       ]
     }
 
-    PROMPT_TEMPLATE="""
+    PROMPT_TEMPLATE = f"""
     Text: {text_content}
+
     You are an expert in generating MCQ type quiz on the basis of provided content. 
     Given the above text, create a quiz of 3 multiple choice questions keeping difficulty level as {quiz_level}. 
     Make sure the questions are not repeated and check all the questions to be conforming the text as well.
+
     Make sure to format your response like RESPONSE_JSON below and use it as a guide.
     Ensure to make an array of 3 MCQs referring the following response json.
+
     Here is the RESPONSE_JSON: 
 
-    {RESPONSE_JSON}
-
+    {json.dumps(RESPONSE_JSON, indent=2)}
     """
 
-    formatted_template = PROMPT_TEMPLATE.format(text_content=text_content, quiz_level=quiz_level, RESPONSE_JSON=RESPONSE_JSON)
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {deepseek_api_key}",
+        "Content-Type": "application/json"
+    }
 
-    client = openai.OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content" : formatted_template
-            }
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": PROMPT_TEMPLATE}
         ],
-        temperature=0.3,
-        max_tokens=1000,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
+        "temperature": 0.3,
+        "max_tokens": 1000,
+        "top_p": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0
+    }
 
-    extracted_response = response.choices[0].message.content
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+    if response.status_code != 200:
+        raise Exception(f"Request failed: {response.status_code} {response.text}")
+
     try:
-        mcqs = json.loads(extracted_response).get("mcqs", [])
+        content = response.json()["choices"][0]["message"]["content"]
+        # Try parsing directly
+        mcqs = json.loads(content).get("mcqs", [])
     except Exception:
-        # Try to extract JSON from the response if not directly parsable
-        import re
-        match = re.search(r'\{[\s\S]*\}', extracted_response)
+        # Try extracting JSON if extra explanation text is included
+        match = re.search(r'\{[\s\S]*\}', content)
         if match:
-            mcqs = json.loads(match.group()).get("mcqs", [])
+            try:
+                mcqs = json.loads(match.group()).get("mcqs", [])
+            except:
+                mcqs = []
         else:
             mcqs = []
-    return mcqs
 
+    return mcqs
 
 # App Routes
 
@@ -318,7 +452,7 @@ def summarize_transcription():
         max_chars = 50000
         if len(transcription) > max_chars:
             transcription = transcription[:max_chars]
-        summary = summarize_text(transcription, OPENAI_API_KEY)
+        summary = summarize_text(transcription)
         # Save the summary back to MongoDB under the same _id
         mongo_collection.update_one({'_id': ObjectId(mongo_id)}, {'$set': {'summary': summary}})
         return jsonify({'summary': summary})

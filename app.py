@@ -20,13 +20,14 @@ app = Flask(__name__)
 
 # Initializing environment variables
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
+AI_MODEL_API_KEY = os.environ.get('AI_MODEL_API_KEY')
 AUDIO_FOLDER = os.environ.get('AUDIO_FOLDER', 'audio_files')  # Folder for audio files
 VIDEO_FOLDER = os.environ.get('VIDEO_FOLDER', 'video_files') # Folder for video files
 TRANSCRIPTS_FOLDER = os.environ.get('TRANSCRIPTS_FOLDER', 'transcripts')
 MONGODB_URI = os.environ.get('MONGODB_URI')
 MONGODB_DB = os.environ.get('MONGODB_DB')
 MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
+AI_MODEL_NAME = os.environ.get('AI_MODEL_NAME')
 
 ytt_api = YouTubeTranscriptApi()
 
@@ -301,7 +302,7 @@ def transcribe_audio_file(filename, language='en'):
 
 # Uncomment if want to use OpenAI instead (paid method)
 # Summarizing text using OpenAI
-# def summarize_text(text, api_key=OPENAI_API_KEY, model='gpt-3.5-turbo', max_tokens=1024):
+# def summarize_text(text, api_key=OPENAI_API_KEY, model='gpt-3.5-turbo', max_tokens=4096):
 #     client = openai.OpenAI(api_key=api_key)
 #     prompt = (
 #         "You are a professional meeting summarizer. "
@@ -310,6 +311,8 @@ def transcribe_audio_file(filename, language='en'):
 #         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
 #         "Be as specific and complete as possible, including names or roles if mentioned. "
 #         "Make the summary clear and useful for someone who did not attend the meeting. "
+#         "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
+#         "(IMPORTANT!) Provide summary in the original language of the original text. "
 #         "\n\nMeeting transcript:\n" + text
 #     )
 #     response = client.chat.completions.create(
@@ -324,8 +327,8 @@ def transcribe_audio_file(filename, language='en'):
 #     return response.choices[0].message.content.strip()
 
 # Use this for free ai model from OpenRouter (but slow)
-# Summarizing text using DeepSeek
-def summarize_text(text, deepseek_api_key=DEEPSEEK_API_KEY, model='deepseek/deepseek-r1-0528:free', max_tokens=1024):
+# Summarizing text
+def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
     prompt = (
         "You are a professional meeting summarizer. "
         "Read the following meeting transcript and produce a detailed, structured summary. "
@@ -333,13 +336,14 @@ def summarize_text(text, deepseek_api_key=DEEPSEEK_API_KEY, model='deepseek/deep
         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
         "Be as specific and complete as possible, including names or roles if mentioned. "
         "Make the summary clear and useful for someone who did not attend the meeting. "
-        "If a timestamp is present, make sure to utilize the timestamp to categorize certain topics into certain timestamps per section. "
+        "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
+        "(IMPORTANT!) Provide summary in the original language of the original text. "
         "\n\nMeeting transcript:\n" + text
     )
 
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {deepseek_api_key}",
+        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
         "Content-Type": "application/json"
     }
 
@@ -443,8 +447,8 @@ def summarize_text(text, deepseek_api_key=DEEPSEEK_API_KEY, model='deepseek/deep
 #             mcqs = []
 #     return mcqs
 
-# Generating quiz with OpenRouter Deepseek
-def generate_mcqs(text_content, quiz_level, deepseek_api_key=DEEPSEEK_API_KEY, model="deepseek/deepseek-r1-0528:free"):
+# Generating quiz with OpenRouter AI Models
+def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
     RESPONSE_JSON = {
       "mcqs" : [
         {
@@ -484,11 +488,13 @@ def generate_mcqs(text_content, quiz_level, deepseek_api_key=DEEPSEEK_API_KEY, m
     Text: {text_content}
 
     You are an expert in generating MCQ type quiz on the basis of provided content. 
-    Given the above text, create a quiz of 3 multiple choice questions keeping difficulty level as {quiz_level}. 
+    Given the above text, create a quiz of 5 multiple choice questions keeping difficulty level as {quiz_level}. 
     Make sure the questions are not repeated and check all the questions to be conforming the text as well.
 
     Make sure to format your response like RESPONSE_JSON below and use it as a guide.
-    Ensure to make an array of 3 MCQs referring the following response json.
+    Ensure to make an array of 5 MCQs referring the following response json.
+
+    Provide quiz in the original language of the original text.
 
     Here is the RESPONSE_JSON: 
 
@@ -497,7 +503,7 @@ def generate_mcqs(text_content, quiz_level, deepseek_api_key=DEEPSEEK_API_KEY, m
 
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {deepseek_api_key}",
+        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
         "Content-Type": "application/json"
     }
 
@@ -508,7 +514,7 @@ def generate_mcqs(text_content, quiz_level, deepseek_api_key=DEEPSEEK_API_KEY, m
             {"role": "user", "content": PROMPT_TEMPLATE}
         ],
         "temperature": 0.3,
-        "max_tokens": 1000,
+        "max_tokens": 10000,
         "top_p": 1,
         "frequency_penalty": 0,
         "presence_penalty": 0
@@ -535,6 +541,27 @@ def generate_mcqs(text_content, quiz_level, deepseek_api_key=DEEPSEEK_API_KEY, m
             mcqs = []
 
     return mcqs
+
+# Helper function to summarize and save to MongoDB
+def summarize_and_save(mongo_id):
+    """
+    Summarize transcription from MongoDB by _id and save the summary back to the same document.
+    """
+    if not mongo_id or mongo_collection is None:
+        return None
+    doc = mongo_collection.find_one({'_id': ObjectId(mongo_id)})
+    if not doc:
+        return None
+    transcription = doc.get('transcription')
+    if not transcription:
+        return None
+    # Truncate if too long for the model
+    max_chars = 100000
+    if len(transcription) > max_chars:
+        transcription = transcription[:max_chars]
+    summary = summarize_text(transcription)
+    mongo_collection.update_one({'_id': ObjectId(mongo_id)}, {'$set': {'summary': summary}})
+    return summary
 
 # App Routes
 
@@ -578,13 +605,17 @@ def youtube_subtitle_transcribe():
             return jsonify({'error': 'No URL provided'}), 400
         
         result = transcribe_youtube_video(youtube_url)
+        # Automatically summarize and save
+        if result.get('mongo_id'):
+            summary = summarize_and_save(result['mongo_id'])
+            result['summary'] = summary
         return jsonify(result)
         
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
+    
 # Transcribing audio file using Whisper API
 @app.route('/whisper_file_transcribe', methods=['POST'])
 def whisper_file_transcribe():
@@ -598,7 +629,14 @@ def whisper_file_transcribe():
             return jsonify({'error': 'No filename provided'}), 400
         
         transcription = transcribe_audio_file(filename, language)
-        return jsonify({'transcription': transcription})
+        # Find the latest audio transcription document for this file
+        doc = mongo_collection.find_one(
+            {'type': 'audio', 'filename': filename},
+            sort=[('created_at', -1)]
+        ) if mongo_collection else None
+        mongo_id = str(doc['_id']) if doc else None
+        summary = summarize_and_save(mongo_id) if mongo_id else None
+        return jsonify({'transcription': transcription, 'summary': summary})
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -633,8 +671,14 @@ def video_to_audio_transcribe():
             return jsonify({'error': f'ffmpeg failed: {result.stderr.decode()}'}), 500
         # Transcribe mp3 using Whisper
         transcription = transcribe_audio_file(mp3_filename, language)
-
-        return jsonify({'transcription': transcription})
+        # Find the latest audio transcription document for this file
+        doc = mongo_collection.find_one(
+            {'type': 'audio', 'filename': mp3_filename},
+            sort=[('created_at', -1)]
+        ) if mongo_collection else None
+        mongo_id = str(doc['_id']) if doc else None
+        summary = summarize_and_save(mongo_id) if mongo_id else None
+        return jsonify({'transcription': transcription, 'summary': summary})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

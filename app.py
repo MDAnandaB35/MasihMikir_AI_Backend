@@ -21,8 +21,8 @@ app = Flask(__name__)
 # Initializing environment variables
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
-AUDIO_FOLDER = os.environ.get('AUDIO_FOLDER', 'audio_files')  # Default folder for audio files
-VIDEO_FOLDER = os.environ.get('VIDEO_FOLDER', 'video_files')
+AUDIO_FOLDER = os.environ.get('AUDIO_FOLDER', 'audio_files')  # Folder for audio files
+VIDEO_FOLDER = os.environ.get('VIDEO_FOLDER', 'video_files') # Folder for video files
 TRANSCRIPTS_FOLDER = os.environ.get('TRANSCRIPTS_FOLDER', 'transcripts')
 MONGODB_URI = os.environ.get('MONGODB_URI')
 MONGODB_DB = os.environ.get('MONGODB_DB')
@@ -52,18 +52,47 @@ def save_transcription_to_mongodb(data):
         return str(result.inserted_id)
     return None
 
-# Helper function to format transcript for OpenAI API
-def format_transcript_for_openai(transcript_data):
+# Helper function to format transcript for LLM
+# Without timestamp
+# def format_transcript(transcript_data):
+#     """
+#     Given a list of transcript segments (from YouTubeTranscriptApi),
+#     return a single string suitable for OpenAI input.
+#     """
+#     if len(transcript_data) == 0:
+#         return ""
+#     if isinstance(transcript_data[0], dict):
+#         return " ".join([snippet['text'] for snippet in transcript_data])
+#     else:
+#         return " ".join([snippet.text for snippet in transcript_data])
+
+# Including timestamp
+def format_transcript(transcript_data):
     """
-    Given a list of transcript segments (from YouTubeTranscriptApi),
-    return a single string suitable for OpenAI input.
+    Converts transcript data to a string with timestamps for each line.
+    Works with both dict and object-based transcript formats.
+    Example:
+    [00:00 - 00:05] Hello world
     """
-    if len(transcript_data) == 0:
-        return ""
-    if isinstance(transcript_data[0], dict):
-        return " ".join([snippet['text'] for snippet in transcript_data])
-    else:
-        return " ".join([snippet.text for snippet in transcript_data])
+    lines = []
+    for snippet in transcript_data:
+        # Extract values from dict or object
+        start = snippet['start'] if isinstance(snippet, dict) else snippet.start
+        duration = snippet['duration'] if isinstance(snippet, dict) else snippet.duration
+        text = snippet['text'] if isinstance(snippet, dict) else snippet.text
+
+        end = start + duration
+
+        # Format start and end timestamps as MM:SS
+        def format_time(seconds):
+            minutes = int(seconds) // 60
+            secs = int(seconds) % 60
+            return f"{minutes:02d}:{secs:02d}"
+
+        timestamp = f"[{format_time(start)} - {format_time(end)}]"
+        lines.append(f"{timestamp} {text}")
+    return "\n".join(lines)
+
 
 # Helper function to extract video ID from YouTube URL
 def extract_video_id(youtube_url):
@@ -118,7 +147,7 @@ def transcribe_youtube_video(youtube_url):
     if not transcript_data:
         raise Exception('No transcript found for this video')
     # Format for OpenAI
-    full_text = format_transcript_for_openai(transcript_data)
+    full_text = format_transcript(transcript_data)
     # Save to MongoDB
     doc = {
         'type': 'youtube',
@@ -134,64 +163,141 @@ def transcribe_youtube_video(youtube_url):
     }
 
 # Transcribing audio file using OpenAI Whisper API
+# Without timestamp
+# async def transcribe_audio_file_async(filename, language='en'):
+#     """
+#     Transcribe audio file using OpenAI Whisper API.
+    
+#     Args:
+#         filename (str): Name of the audio file
+#         language (str): Language code for transcription
+        
+#     Returns:
+#         str: Transcription text
+        
+#     Raises:
+#         Exception: If transcription fails
+#     """
+#     if not OPENAI_API_KEY:
+#         raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
+    
+#     file_path = os.path.join(AUDIO_FOLDER, filename)
+#     if not os.path.isfile(file_path):
+#         raise Exception(f'File not found: {file_path}')
+    
+#     try:
+#         with open(file_path, 'rb') as audio_file:
+#             audio_data = audio_file.read()
+        
+#         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+#         transcript = await client.audio.transcriptions.create(
+#             model="whisper-1",
+#             file=(filename, audio_data),
+#             language=language
+#         )
+#         return transcript.text
+#     except Exception as e:
+#         raise Exception(f'Failed to transcribe audio: {str(e)}')
+
+# # Saving to MongoDB
+# def transcribe_audio_file(filename, language='en'):
+#     """
+#     Synchronous wrapper for audio transcription.
+    
+#     Args:
+#         filename (str): Name of the audio file
+#         language (str): Language code for transcription
+        
+#     Returns:
+#         str: Transcription text
+#     """
+#     transcription = asyncio.run(transcribe_audio_file_async(filename, language))
+#     # Save to MongoDB
+#     doc = {
+#         'type': 'audio',
+#         'filename': filename,
+#         'language': language,
+#         'transcription': transcription,
+#         'created_at': datetime.utcnow()
+#     }
+#     inserted_id = save_transcription_to_mongodb(doc)
+#     return transcription
+
+# Transcribing audio file using OpenAI Whisper API
+# With timestamp
 async def transcribe_audio_file_async(filename, language='en'):
     """
-    Transcribe audio file using OpenAI Whisper API.
+    Transcribe audio file using OpenAI Whisper API and return detailed result with timestamps.
     
-    Args:
-        filename (str): Name of the audio file
-        language (str): Language code for transcription
-        
     Returns:
-        str: Transcription text
-        
-    Raises:
-        Exception: If transcription fails
+        dict: Contains 'text', 'segments', and optionally 'formatted'
     """
     if not OPENAI_API_KEY:
         raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
-    
+
     file_path = os.path.join(AUDIO_FOLDER, filename)
     if not os.path.isfile(file_path):
         raise Exception(f'File not found: {file_path}')
-    
+
     try:
         with open(file_path, 'rb') as audio_file:
             audio_data = audio_file.read()
-        
+
         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+
         transcript = await client.audio.transcriptions.create(
             model="whisper-1",
             file=(filename, audio_data),
-            language=language
+            language=language,
+            response_format="verbose_json",
+            timestamp_granularities=["segment"]
         )
-        return transcript.text
+
+        # Format segments into readable string with timestamps
+        def format_time(seconds):
+            minutes = int(seconds) // 60
+            secs = int(seconds) % 60
+            return f"{minutes:02d}:{secs:02d}"
+
+        def format_segments(segments):
+            lines = []
+            for seg in segments:
+                start = format_time(seg["start"])
+                end = format_time(seg["end"])
+                lines.append(f"[{start} - {end}] {seg['text']}")
+            return "\n".join(lines)
+
+        formatted_text = format_segments(transcript.segments)
+
+        return {
+            "text": transcript.text,
+            "segments": transcript.segments,
+            "formatted": formatted_text
+        }
+
     except Exception as e:
         raise Exception(f'Failed to transcribe audio: {str(e)}')
+
 
 # Saving to MongoDB
 def transcribe_audio_file(filename, language='en'):
     """
     Synchronous wrapper for audio transcription.
     
-    Args:
-        filename (str): Name of the audio file
-        language (str): Language code for transcription
-        
     Returns:
-        str: Transcription text
+        str: Formatted transcription with timestamps
     """
-    transcription = asyncio.run(transcribe_audio_file_async(filename, language))
-    # Save to MongoDB
+    result = asyncio.run(transcribe_audio_file_async(filename, language))
+
     doc = {
         'type': 'audio',
         'filename': filename,
-        'language': language,
-        'transcription': transcription,
+        'transcription': result['formatted'],
         'created_at': datetime.utcnow()
     }
+
     inserted_id = save_transcription_to_mongodb(doc)
-    return transcription
+    return result['formatted']
 
 # Uncomment if want to use OpenAI instead (paid method)
 # Summarizing text using OpenAI
@@ -227,6 +333,7 @@ def summarize_text(text, deepseek_api_key=DEEPSEEK_API_KEY, model='deepseek/deep
         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
         "Be as specific and complete as possible, including names or roles if mentioned. "
         "Make the summary clear and useful for someone who did not attend the meeting. "
+        "If a timestamp is present, make sure to utilize the timestamp to categorize certain topics into certain timestamps per section. "
         "\n\nMeeting transcript:\n" + text
     )
 

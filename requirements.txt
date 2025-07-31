@@ -1,7 +1,7 @@
 Flask
+requests
 yt-dlp
 openai
 youtube-transcript-api
 pymongo
 python-dotenv
-bson

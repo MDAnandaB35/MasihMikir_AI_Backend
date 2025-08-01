@@ -627,14 +627,15 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 
     return mcqs
 
-# Ask questions about transcription using Helpy LLM
-# def ask_question_about_transcription(transcription, question, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
+# Ask questions about transcription using Helpy LLM with conversation memory
+# def ask_question_about_transcription_helpy(transcription, question, conversation_history=None, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
 #     """
-#     Ask a question about a transcription using Helpy LLM API.
+#     Ask a question about a transcription using Helpy LLM API with conversation memory.
     
 #     Args:
 #         transcription (str): The transcription text to use as context
 #         question (str): The user's question
+#         conversation_history (list): List of previous Q&A pairs for context
 #         API_KEY (str): Helpy API key
 #         model (str): Helpy model name
         
@@ -643,6 +644,14 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 #     """
 #     url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
     
+#     # Build conversation context
+#     conversation_context = ""
+#     if conversation_history and len(conversation_history) > 0:
+#         conversation_context = "\n\nPrevious conversation:\n"
+#         for i, qa in enumerate(conversation_history[-5:], 1):  # Keep last 5 Q&A pairs for context
+#             conversation_context += f"Q{i}: {qa['question']}\n"
+#             conversation_context += f"A{i}: {qa['answer']}\n\n"
+    
 #     prompt = (
 #         f"You are a helpful assistant that answers questions based on a meeting transcript. "
 #         f"Please answer the following question based on the transcript provided below. "
@@ -650,8 +659,9 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 #         f"If the answer cannot be found in the transcript, say so clearly. "
 #         f"Provide a clear, concise, and accurate answer.\n\n"
 #         f"Provide the answer in the original language of the original text. "
-#         f"Meeting Transcript:\n{transcription}\n\n"
-#         f"Question: {question}\n\n"
+#         f"Meeting Transcript:\n{transcription}\n"
+#         f"{conversation_context}"
+#         f"Current Question: {question}\n\n"
 #         f"Answer:"
 #     )
     
@@ -684,14 +694,15 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 #         raise Exception(f"Error {response.status_code}: {response.text}")
 
 # Uncomment if want to use OpenAI instead (paid method)
-# Ask questions about transcription using OpenAI
-# def ask_question_about_transcription(transcription, question, api_key=OPENAI_API_KEY, model=OPENAI_MODEL):
+# Ask questions about transcription using OpenAI with conversation memory
+# def ask_question_about_transcription_openai(transcription, question, conversation_history=None, api_key=OPENAI_API_KEY, model=OPENAI_MODEL):
 #     """
-#     Ask a question about a transcription using OpenAI API.
+#     Ask a question about a transcription using OpenAI API with conversation memory.
     
 #     Args:
 #         transcription (str): The transcription text to use as context
 #         question (str): The user's question
+#         conversation_history (list): List of previous Q&A pairs for context
 #         api_key (str): OpenAI API key
 #         model (str): OpenAI model name
         
@@ -703,6 +714,14 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
     
 #     client = openai.OpenAI(api_key=api_key)
     
+#     # Build conversation context
+#     conversation_context = ""
+#     if conversation_history and len(conversation_history) > 0:
+#         conversation_context = "\n\nPrevious conversation:\n"
+#         for i, qa in enumerate(conversation_history[-5:], 1):  # Keep last 5 Q&A pairs for context
+#             conversation_context += f"Q{i}: {qa['question']}\n"
+#             conversation_context += f"A{i}: {qa['answer']}\n\n"
+    
 #     prompt = (
 #         f"You are a helpful assistant that answers questions based on a meeting transcript. "
 #         f"Please answer the following question based on the transcript provided below. "
@@ -710,8 +729,9 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 #         f"If the answer cannot be found in the transcript, say so clearly. "
 #         f"Provide a clear, concise, and accurate answer.\n\n"
 #         f"Provide the answer in the original language of the original text. "
-#         f"Meeting Transcript:\n{transcription}\n\n"
-#         f"Question: {question}\n\n"
+#         f"Meeting Transcript:\n{transcription}\n"
+#         f"{conversation_context}"
+#         f"Current Question: {question}\n\n"
 #         f"Answer:"
 #     )
     
@@ -728,14 +748,15 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 #     return response.choices[0].message.content.strip()
 
 # Uncomment if want to use OpenRouter AI Models (free but slow)
-# Ask questions about transcription using OpenRouter
-def ask_question_about_transcription(transcription, question, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+# Ask questions about transcription using OpenRouter with conversation memory
+def ask_question_about_transcription(transcription, question, conversation_history=None, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
     """
-    Ask a question about a transcription using OpenRouter AI Models.
+    Ask a question about a transcription using OpenRouter AI Models with conversation memory.
     
     Args:
         transcription (str): The transcription text to use as context
         question (str): The user's question
+        conversation_history (list): List of previous Q&A pairs for context
         AI_MODEL_API_KEY (str): OpenRouter API key
         model (str): OpenRouter model name
         
@@ -747,6 +768,14 @@ def ask_question_about_transcription(transcription, question, AI_MODEL_API_KEY=A
     
     url = "https://openrouter.ai/api/v1/chat/completions"
     
+    # Build conversation context
+    conversation_context = ""
+    if conversation_history and len(conversation_history) > 0:
+        conversation_context = "\n\nPrevious conversation:\n"
+        for i, qa in enumerate(conversation_history[-5:], 1):  # Keep last 5 Q&A pairs for context
+            conversation_context += f"Q{i}: {qa['question']}\n"
+            conversation_context += f"A{i}: {qa['answer']}\n\n"
+    
     prompt = (
         f"You are a helpful assistant that answers questions based on a meeting transcript. "
         f"Please answer the following question based on the transcript provided below. "
@@ -754,8 +783,9 @@ def ask_question_about_transcription(transcription, question, AI_MODEL_API_KEY=A
         f"If the answer cannot be found in the transcript, say so clearly. "
         f"Provide a clear, concise, and accurate answer.\n\n"
         f"Provide the answer in the original language of the original text. "
-        f"Meeting Transcript:\n{transcription}\n\n"
-        f"Question: {question}\n\n"
+        f"Meeting Transcript:\n{transcription}\n"
+        f"{conversation_context}"
+        f"Current Question: {question}\n\n"
         f"Answer:"
     )
     
@@ -938,7 +968,7 @@ def generate_quiz():
 
 @app.route('/ask_question', methods=['POST'])
 def ask_question():
-    """Ask a question about a transcription stored in MongoDB by _id."""
+    """Ask a question about a transcription stored in MongoDB by _id with conversation memory."""
     try:
         data = request.get_json()
         mongo_id = data.get('_id')
@@ -950,6 +980,9 @@ def ask_question():
         if mongo_collection is None:
             return jsonify({'error': 'MongoDB not configured'}), 500
         
+        if chat_logs_collection is None:
+            return jsonify({'error': 'Chat logs collection not configured'}), 500
+        
         doc = mongo_collection.find_one({'_id': ObjectId(mongo_id)})
         if not doc:
             return jsonify({'error': f'No document found for _id: {mongo_id}'}), 404
@@ -958,12 +991,26 @@ def ask_question():
         if not transcription:
             return jsonify({'error': 'No transcription found in document'}), 400
         
+        # Get conversation history for this transcription
+        conversation_history = []
+        if chat_logs_collection is not None:
+            chat_logs = list(chat_logs_collection.find(
+                {'transcription_id': mongo_id},
+                {'question': 1, 'answer': 1}
+            ).sort('created_at', 1))  # Sort by creation time, oldest first
+            
+            conversation_history = [
+                {'question': log['question'], 'answer': log['answer']} 
+                for log in chat_logs
+            ]
+        
         # Truncate transcription if too long for the model
         max_chars = 100000
         if len(transcription) > max_chars:
             transcription = transcription[:max_chars]
         
-        answer = ask_question_about_transcription(transcription, question)
+        # Pass conversation history to the function
+        answer = ask_question_about_transcription(transcription, question, conversation_history)
         
         # Save the chat log to the chat_logs collection
         chat_log_id = save_chat_log_to_mongodb(mongo_id, question, answer)
@@ -973,7 +1020,8 @@ def ask_question():
             'transcription': transcription,
             'question': question,
             'answer': answer,
-            'chat_log_id': chat_log_id
+            'chat_log_id': chat_log_id,
+            'conversation_history_count': len(conversation_history)
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -989,7 +1037,7 @@ def get_chat_history():
             return jsonify({'error': 'No _id provided'}), 400
         
         if chat_logs_collection is None:
-            return jsonify({'error': 'MongoDB not configured'}), 500
+            return jsonify({'error': 'Chat logs collection not configured'}), 500
         
         # Find all chat logs for this transcription
         chat_logs = list(chat_logs_collection.find(

@@ -5,11 +5,12 @@ This is the backend service for MasihMeeting, providing APIs for transcribing, s
 ## Features
 
 - **Transcribe YouTube Videos:** Extracts subtitles/transcripts from YouTube videos and saves them to MongoDB.
-- **Transcribe Audio Files:** Uses OpenAI Whisper API to transcribe uploaded audio files.
+- **Transcribe Audio Files:** Uses OpenAI Whisper API to transcribe uploaded audio files with timestamps.
 - **Transcribe Video Files:** Converts video files to audio, then transcribes using Whisper.
 - **Summarize Transcriptions:** Summarizes meeting transcripts using Helpy, OpenRouter or OpenAI.
 - **Generate Quizzes:** Generates multiple-choice questions (MCQs) from transcriptions using Helpy, OpenRouter or OpenAI.
-- **Asking Questions:** Provide answers to questions about the meeting.
+- **Ask Questions:** AI-powered Q&A system with conversation memory for contextual follow-up questions.
+- **Chat History:** Retrieve and manage conversation history for each transcription.
 
 ## Folder Structure
 
@@ -117,9 +118,12 @@ All endpoints return a consistent JSON structure with the MongoDB document ID an
   "transcription": "formatted_transcription_with_timestamps",
   "question": "user_question",
   "answer": "ai_generated_answer",
-  "chat_log_id": "chat_log_document_id"
+  "chat_log_id": "chat_log_document_id",
+  "conversation_history_count": 3
 }
 ```
+
+**Note**: The `/ask_question` endpoint includes conversation memory. When you ask follow-up questions, the AI will have access to the previous 5 questions and answers from the same transcription, allowing for more contextual and coherent conversations.
 
 **For Chat History Endpoint**:
 
@@ -139,15 +143,15 @@ All endpoints return a consistent JSON structure with the MongoDB document ID an
 
 ### Endpoint Details
 
-| Name                  | Method | Endpoint                       | Body                                                                       | Returns                                                                                              |
-| --------------------- | ------ | ------------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| YouTube Transcription | `POST` | `/youtube_subtitle_transcribe` | `{ "url": "<YouTube URL>" }`                                               | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
-| Audio Transcription   | `POST` | `/whisper_file_transcribe`     | `{ "filename": "<audio file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
-| Video Transcription   | `POST` | `/video_to_audio_transcribe`   | `{ "filename": "<video file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
-| Request Summary       | `POST` | `/summarize_transcription`     | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
-| Generate Quiz         | `POST` | `/generate_quiz`               | `{ "_id": "<MongoDB document ID>", "quiz_level": "<easy, medium, hard>" }` | `{ "_id": "...", "transcription": "...", "mcqs": [...] }`                                            |
-| Ask Question          | `POST` | `/ask_question`                | `{ "_id": "<MongoDB document ID>", "question": "<user question>" }`        | `{ "_id": "...", "transcription": "...", "question": "...", "answer": "...", "chat_log_id": "..." }` |
-| Get Chat History      | `POST` | `/get_chat_history`            | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "chat_history": [...] }`                                                            |
+| Name                  | Method | Endpoint                       | Body                                                                       | Returns                                                                                                                               |
+| --------------------- | ------ | ------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| YouTube Transcription | `POST` | `/youtube_subtitle_transcribe` | `{ "url": "<YouTube URL>" }`                                               | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                                                          |
+| Audio Transcription   | `POST` | `/whisper_file_transcribe`     | `{ "filename": "<audio file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                                                          |
+| Video Transcription   | `POST` | `/video_to_audio_transcribe`   | `{ "filename": "<video file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                                                          |
+| Request Summary       | `POST` | `/summarize_transcription`     | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                                                          |
+| Generate Quiz         | `POST` | `/generate_quiz`               | `{ "_id": "<MongoDB document ID>", "quiz_level": "<easy, medium, hard>" }` | `{ "_id": "...", "transcription": "...", "mcqs": [...] }`                                                                             |
+| Ask Question          | `POST` | `/ask_question`                | `{ "_id": "<MongoDB document ID>", "question": "<user question>" }`        | `{ "_id": "...", "transcription": "...", "question": "...", "answer": "...", "chat_log_id": "...", "conversation_history_count": 3 }` |
+| Get Chat History      | `POST` | `/get_chat_history`            | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "chat_history": [...] }`                                                                                             |
 
 ## Testing
 
@@ -157,7 +161,34 @@ You can use [MasihMeeting.postman_collection.json](MasihMeeting.postman_collecti
 
 - Audio and video files should be placed in the `audio_files/` and `video_files/` directories, respectively.
 - Transcriptions and summaries are stored in `MONGODB_COLLECTION`.
+- Chat logs are stored in a separate `chat_logs` collection for conversation history.
 - Requires FFmpeg installed for video-to-audio conversion.
+- All transcriptions include timestamps for better context and navigation.
+
+## AI Model Support
+
+The application supports multiple AI providers for different functionalities:
+
+### Summarization
+
+- **Helpy** (Default): Fast and reliable summarization
+- **OpenAI**: High-quality but paid service
+- **OpenRouter**: Free but slower alternative
+
+### Question Answering
+
+- **OpenRouter** (Default): Free AI models with conversation memory
+- **OpenAI**: High-quality but paid service
+- **Helpy**: Fast alternative
+
+### Quiz Generation
+
+- **OpenRouter** (Default): Free AI models
+- **OpenAI**: High-quality but paid service
+
+### Transcription
+
+- **OpenAI Whisper**: High-quality audio/video transcription with timestamps
 
 ## License
 

@@ -28,6 +28,7 @@ MONGODB_URI = os.environ.get('MONGODB_URI')
 MONGODB_DB = os.environ.get('MONGODB_DB')
 MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
 AI_MODEL_NAME = os.environ.get('AI_MODEL_NAME')
+HELPY_API_KEY = os.environ.get('HELPY_API_KEY')
 
 ytt_api = YouTubeTranscriptApi()
 
@@ -159,8 +160,8 @@ def transcribe_youtube_video(youtube_url):
     }
     inserted_id = save_transcription_to_mongodb(doc)
     return {
+        'mongo_id': inserted_id,
         'transcription': full_text,
-        'mongo_id': inserted_id
     }
 
 # Transcribing audio file using OpenAI Whisper API
@@ -298,7 +299,10 @@ def transcribe_audio_file(filename, language='en'):
     }
 
     inserted_id = save_transcription_to_mongodb(doc)
-    return result['formatted']
+    return {
+            'mongo_id': inserted_id,
+            'transcription': result['formatted'],
+        }
 
 # Uncomment if want to use OpenAI instead (paid method)
 # Summarizing text using OpenAI
@@ -326,9 +330,12 @@ def transcribe_audio_file(filename, language='en'):
 #     )
 #     return response.choices[0].message.content.strip()
 
-# Use this for free ai model from OpenRouter (but slow)
-# Summarizing text
-def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+# Generating summary with Helpy
+def summarize_text(text, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
+    """
+    Summarize meeting transcript using Helpy LLM API.
+    """
+    url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
     prompt = (
         "You are a professional meeting summarizer. "
         "Read the following meeting transcript and produce a detailed, structured summary. "
@@ -336,33 +343,73 @@ def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME)
         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
         "Be as specific and complete as possible, including names or roles if mentioned. "
         "Make the summary clear and useful for someone who did not attend the meeting. "
-        "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
+        "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly WITH TIMESTAMPS. Each main topic should include the relevant timestamp(s) where the discussion occurred."
         "(IMPORTANT!) Provide summary in the original language of the original text. "
         "\n\nMeeting transcript:\n" + text
     )
-
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt
+                    }
+                ]
+            }
         ],
-        "temperature": 0.5
     }
-
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "Authorization": f"Bearer {API_KEY}"
+    }
+    response = requests.post(url, json=payload, headers=headers)
     if response.status_code == 200:
         result = response.json()
         return result["choices"][0]["message"]["content"].strip()
     else:
         raise Exception(f"Error {response.status_code}: {response.text}")
+
+# Use this for free ai model from OpenRouter (but slow)
+# Summarizing text
+# def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+#     prompt = (
+#         "You are a professional meeting summarizer. "
+#         "Read the following meeting transcript and produce a detailed, structured summary. "
+#         "Organize the summary into bullet points grouped by main topics. "
+#         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
+#         "Be as specific and complete as possible, including names or roles if mentioned. "
+#         "Make the summary clear and useful for someone who did not attend the meeting. "
+#         "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
+#         "(IMPORTANT!) Provide summary in the original language of the original text. "
+#         "\n\nMeeting transcript:\n" + text
+#     )
+
+#     url = "https://openrouter.ai/api/v1/chat/completions"
+#     headers = {
+#         "Authorization": f"Bearer {AI_MODEL_API_KEY}",
+#         "Content-Type": "application/json"
+#     }
+
+#     payload = {
+#         "model": model,
+#         "messages": [
+#             {"role": "system", "content": "You are a helpful assistant."},
+#             {"role": "user", "content": prompt}
+#         ],
+#         "temperature": 0.5
+#     }
+
+#     response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+#     if response.status_code == 200:
+#         result = response.json()
+#         return result["choices"][0]["message"]["content"].strip()
+#     else:
+#         raise Exception(f"Error {response.status_code}: {response.text}")
 
 
 # Generating quiz with OpenAI
@@ -471,7 +518,7 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
             },
             "correct": "correct choice option in the form of a, b, c or d",
         },
-        {
+        {   
             "mcq": "multiple choice question",
             "options": {
                 "a": "choice here",
@@ -585,41 +632,36 @@ def summarize_transcription():
         transcription = doc.get('transcription')
         if not transcription:
             return jsonify({'error': 'No transcription found in document'}), 400
-        # Truncate if too long for the model
         max_chars = 50000
         if len(transcription) > max_chars:
             transcription = transcription[:max_chars]
         summary = summarize_text(transcription)
-        # Save the summary back to MongoDB under the same _id
         mongo_collection.update_one({'_id': ObjectId(mongo_id)}, {'$set': {'summary': summary}})
-        return jsonify({'summary': summary})
+        return jsonify({
+            '_id': mongo_id, 
+            'transcription': transcription,
+            'summary': summary
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Transcribing YouTube video using subtitles
 @app.route('/youtube_subtitle_transcribe', methods=['POST'])
 def youtube_subtitle_transcribe():
     """Route to transcribe YouTube video using subtitles."""
     try:
         data = request.get_json()
         youtube_url = data.get('url')
-        
         if not youtube_url:
             return jsonify({'error': 'No URL provided'}), 400
-        
         result = transcribe_youtube_video(youtube_url)
-        # Automatically summarize and save
-        if result.get('mongo_id'):
-            summary = summarize_and_save(result['mongo_id'])
-            result['summary'] = summary
-        return jsonify(result)
-        
+        mongo_id = result.get('mongo_id')
+        summary = summarize_and_save(mongo_id) if mongo_id else None
+        return jsonify({'_id': mongo_id, 'transcription': result.get('transcription'), 'summary': summary})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-# Transcribing audio file using Whisper API
+
 @app.route('/whisper_file_transcribe', methods=['POST'])
 def whisper_file_transcribe():
     """Route to transcribe audio file using Whisper API."""
@@ -627,30 +669,25 @@ def whisper_file_transcribe():
         data = request.get_json()
         filename = data.get('filename')
         language = data.get('language', 'id')
-        
         if not filename:
             return jsonify({'error': 'No filename provided'}), 400
-        
-        transcription = transcribe_audio_file(filename, language)
-        # Find the latest audio transcription document for this file
-        doc = mongo_collection.find_one(
-            {'type': 'audio', 'filename': filename},
-            sort=[('created_at', -1)]
-        ) if mongo_collection else None
-        mongo_id = str(doc['_id']) if doc else None
+        result = transcribe_audio_file(filename, language)
+        mongo_id = result.get('mongo_id')
         summary = summarize_and_save(mongo_id) if mongo_id else None
-        return jsonify({'transcription': transcription, 'summary': summary})
-        
+        return jsonify({
+            '_id': mongo_id, 
+            'transcription': result.get('transcription'), 
+            'summary': summary
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Transcribing video to audio using Whisper API
 @app.route('/video_to_audio_transcribe', methods=['POST'])
 def video_to_audio_transcribe():
     """
     Convert an mp4 video to mp3 audio, transcribe using Whisper, and save transcription to MongoDB.
     Expects JSON: {"filename": "video.mp4", "language": "en"}
-    Returns: {"transcription": ..., "mongo_id": ...}
+    Returns: {"_id": ..., "transcription": ..., "summary": ...}
     """
     try:
         data = request.get_json()
@@ -661,27 +698,23 @@ def video_to_audio_transcribe():
         video_path = os.path.join(VIDEO_FOLDER, filename)
         if not os.path.isfile(video_path):
             return jsonify({'error': f'File not found: {video_path}'}), 404
-        # Convert mp4 to mp3
         base_name = os.path.splitext(filename)[0]
         mp3_filename = f"{base_name}.mp3"
         mp3_path = os.path.join(AUDIO_FOLDER, mp3_filename)
-        # Use ffmpeg to convert
         ffmpeg_cmd = [
             'ffmpeg', '-y', '-i', video_path, '-vn', '-acodec', 'libmp3lame', mp3_path
         ]
         result = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
             return jsonify({'error': f'ffmpeg failed: {result.stderr.decode()}'}), 500
-        # Transcribe mp3 using Whisper
-        transcription = transcribe_audio_file(mp3_filename, language)
-        # Find the latest audio transcription document for this file
-        doc = mongo_collection.find_one(
-            {'type': 'audio', 'filename': mp3_filename},
-            sort=[('created_at', -1)]
-        ) if mongo_collection else None
-        mongo_id = str(doc['_id']) if doc else None
+        transcription_result = transcribe_audio_file(mp3_filename, language)
+        mongo_id = transcription_result.get('mongo_id')
         summary = summarize_and_save(mongo_id) if mongo_id else None
-        return jsonify({'transcription': transcription, 'summary': summary})
+        return jsonify({
+            '_id': mongo_id, 
+            'transcription': transcription_result.get('transcription'), 
+            'summary': summary
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -703,11 +736,14 @@ def generate_quiz():
         if not transcription:
             return jsonify({'error': 'No transcription found in document'}), 400
         mcqs = generate_mcqs(transcription, quiz_level)
-        # Save questions back to MongoDB
         mongo_collection.update_one({'_id': ObjectId(mongo_id)}, {'$set': {'mcqs': mcqs}})
-        return jsonify({'mcqs': mcqs})
+        return jsonify({
+            '_id': mongo_id, 
+            'transcription': transcription,
+            'mcqs': mcqs
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)

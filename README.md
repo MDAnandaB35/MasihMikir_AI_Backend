@@ -4,11 +4,11 @@ This is the backend service for MasihMeeting, providing APIs for transcribing, s
 
 ## Features
 
--   **Transcribe YouTube Videos:** Extracts subtitles/transcripts from YouTube videos and saves them to MongoDB.
--   **Transcribe Audio Files:** Uses OpenAI Whisper API to transcribe uploaded audio files.
--   **Transcribe Video Files:** Converts video files to audio, then transcribes using Whisper.
--   **Summarize Transcriptions:** Summarizes meeting transcripts using DeepSeek or OpenAI models.
--   **Generate Quizzes:** Generates multiple-choice questions (MCQs) from transcriptions using DeepSeek or OpenAI.
+- **Transcribe YouTube Videos:** Extracts subtitles/transcripts from YouTube videos and saves them to MongoDB.
+- **Transcribe Audio Files:** Uses OpenAI Whisper API to transcribe uploaded audio files.
+- **Transcribe Video Files:** Converts video files to audio, then transcribes using Whisper.
+- **Summarize Transcriptions:** Summarizes meeting transcripts using DeepSeek or OpenAI models.
+- **Generate Quizzes:** Generates multiple-choice questions (MCQs) from transcriptions using DeepSeek or OpenAI.
 
 ## Folder Structure
 
@@ -27,56 +27,93 @@ video_files/
 
 2. **Install dependencies:**
 
-    Create and activate a virtual environment to avoid polluting your base Python installation:
+   Create and activate a virtual environment to avoid polluting your base Python installation:
 
-    On Windows:
+   On Windows:
 
-    ```sh
-    python -m venv .venv
-    .venv\Scripts\activate
-    ```
+   ```sh
+   python -m venv .venv
+   .venv\Scripts\activate
+   ```
 
-    On macOS/Linux:
+   On macOS/Linux:
 
-    ```sh
-    python -m venv .venv
-    source .venv/bin/activate
-    ```
+   ```sh
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
 
-    Then install the requirements:
+   Then install the requirements:
 
-    ```sh
-    pip install -r requirements.txt
-    ```
+   ```sh
+   pip install -r requirements.txt
+   ```
 
 3. **Environment Variables:**
    Create a `.env` file with the following variables:
 
-    ```
-    OPENAI_API_KEY=your_openai_api_key
-    DEEPSEEK_API_KEY=your_deepseek_api_key
-    MONGODB_URI=your_mongodb_uri
-    MONGODB_DB=your_db_name
-    MONGODB_COLLECTION=your_collection_name
-    AUDIO_FOLDER=audio_files
-    VIDEO_FOLDER=video_files
-    TRANSCRIPTS_FOLDER=transcripts
-    ```
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   DEEPSEEK_API_KEY=your_deepseek_api_key
+   MONGODB_URI=your_mongodb_uri
+   MONGODB_DB=your_db_name
+   MONGODB_COLLECTION=your_collection_name
+   AUDIO_FOLDER=audio_files
+   VIDEO_FOLDER=video_files
+   TRANSCRIPTS_FOLDER=transcripts
+   ```
 
 4. **Run the server:**
-    ```sh
-    python app.py
-    ```
+   ```sh
+   python app.py
+   ```
 
 ## API Endpoints
 
-| Name                  | Method | Endpoint                       | Body                                                                       | Returns                                 |
-| --------------------- | ------ | ------------------------------ | -------------------------------------------------------------------------- | --------------------------------------- |
-| YouTube Transcription | `POST` | `/youtube_subtitle_transcribe` | `{ "url": "<YouTube URL>" }`                                               | Transcription, summary, and MongoDB ID. |
-| Audio Transcription   | `POST` | `/whisper_file_transcribe`     | `{ "filename": "<audio file>", "language": "<lang>" }`                     | Transcription and summary.              |
-| Video Transcription   | `POST` | `/video_to_audio_transcribe`   | `{ "filename": "<video file>", "language": "<lang>" }`                     | Transcription and summary.              |
-| Request Summary       | `POST` | `/summarize_transcription`     | `{ "_id": "<MongoDB document ID>" }`                                       | Summary.                                |
-| Generate Quiz         | `POST` | `/generate_quiz`               | `{ "_id": "<MongoDB document ID>", "quiz_level": "<easy, medium, hard>" }` | MCQs.                                   |
+All endpoints return a consistent JSON structure with the MongoDB document ID and relevant data.
+
+### Response Format
+
+**For Transcription Endpoints** (YouTube, Audio, Video, Summary):
+
+```json
+{
+  "_id": "mongodb_object_id",
+  "transcription": "formatted_transcription_with_timestamps",
+  "summary": "detailed_meeting_summary"
+}
+```
+
+**For Quiz Generation Endpoint**:
+
+```json
+{
+  "_id": "mongodb_object_id",
+  "transcription": "formatted_transcription_with_timestamps",
+  "mcqs": [
+    {
+      "mcq": "question_text",
+      "options": {
+        "a": "option_a",
+        "b": "option_b",
+        "c": "option_c",
+        "d": "option_d"
+      },
+      "correct": "correct_option_letter"
+    }
+  ]
+}
+```
+
+### Endpoint Details
+
+| Name                  | Method | Endpoint                       | Body                                                                       | Returns                                                      |
+| --------------------- | ------ | ------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| YouTube Transcription | `POST` | `/youtube_subtitle_transcribe` | `{ "url": "<YouTube URL>" }`                                               | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
+| Audio Transcription   | `POST` | `/whisper_file_transcribe`     | `{ "filename": "<audio file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
+| Video Transcription   | `POST` | `/video_to_audio_transcribe`   | `{ "filename": "<video file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
+| Request Summary       | `POST` | `/summarize_transcription`     | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
+| Generate Quiz         | `POST` | `/generate_quiz`               | `{ "_id": "<MongoDB document ID>", "quiz_level": "<easy, medium, hard>" }` | `{ "_id": "...", "transcription": "...", "mcqs": [...] }`    |
 
 ## Testing
 
@@ -84,9 +121,9 @@ You can use [MasihMeeting.postman_collection.json](MasihMeeting.postman_collecti
 
 ## Notes
 
--   Audio and video files should be placed in the `audio_files/` and `video_files/` directories, respectively.
--   Transcriptions and summaries are stored in `MONGODB_COLLECTION`.
--   Requires FFmpeg installed for video-to-audio conversion.
+- Audio and video files should be placed in the `audio_files/` and `video_files/` directories, respectively.
+- Transcriptions and summaries are stored in `MONGODB_COLLECTION`.
+- Requires FFmpeg installed for video-to-audio conversion.
 
 ## License
 

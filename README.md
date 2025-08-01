@@ -86,7 +86,7 @@ You can use [MasihMeeting.postman_collection.json](MasihMeeting.postman_collecti
 
 -   Audio and video files should be placed in the `audio_files/` and `video_files/` directories, respectively.
 -   Transcriptions and summaries are stored in `MONGODB_COLLECTION`.
--   Requires ffmpeg installed for video-to-audio conversion.
+-   Requires FFmpeg installed for video-to-audio conversion.
 
 ## License
 

@@ -19,15 +19,25 @@ import re
 app = Flask(__name__)
 
 # Initializing environment variables
+# OpenAI
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-AI_MODEL_API_KEY = os.environ.get('AI_MODEL_API_KEY')
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL')
+
+# Folder paths (Optional)
 AUDIO_FOLDER = os.environ.get('AUDIO_FOLDER', 'audio_files')  # Folder for audio files
 VIDEO_FOLDER = os.environ.get('VIDEO_FOLDER', 'video_files') # Folder for video files
 TRANSCRIPTS_FOLDER = os.environ.get('TRANSCRIPTS_FOLDER', 'transcripts')
+
+# MongoDB
 MONGODB_URI = os.environ.get('MONGODB_URI')
 MONGODB_DB = os.environ.get('MONGODB_DB')
 MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
+
+# OpenRouter AI Model
+AI_MODEL_API_KEY = os.environ.get('AI_MODEL_API_KEY')
 AI_MODEL_NAME = os.environ.get('AI_MODEL_NAME')
+
+# Helpy API Key
 HELPY_API_KEY = os.environ.get('HELPY_API_KEY')
 
 ytt_api = YouTubeTranscriptApi()
@@ -331,7 +341,7 @@ def transcribe_audio_file(filename, language='en'):
 
 # Uncomment if want to use OpenAI instead (paid method)
 # Summarizing text using OpenAI
-# def summarize_text(text, api_key=OPENAI_API_KEY, model='gpt-3.5-turbo', max_tokens=4096):
+# def summarize_text(text, api_key=OPENAI_API_KEY, model=OPENAI_MODEL, max_tokens=4096):
 #     client = openai.OpenAI(api_key=api_key)
 #     prompt = (
 #         "You are a professional meeting summarizer. "
@@ -439,7 +449,7 @@ def summarize_text(text, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
 
 # Generating quiz with OpenAI
 # Generating Quiz
-# def generate_mcqs(text_content, quiz_level, api_key=OPENAI_API_KEY, model="gpt-3.5-turbo"): 
+# def generate_mcqs(text_content, quiz_level, api_key=OPENAI_API_KEY, model=OPENAI_MODEL): 
 #     RESPONSE_JSON = {
 #       "mcqs" : [
 #         {
@@ -675,7 +685,7 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 
 # Uncomment if want to use OpenAI instead (paid method)
 # Ask questions about transcription using OpenAI
-# def ask_question_about_transcription(transcription, question, api_key=OPENAI_API_KEY, model='gpt-4.1-nano-2025-04-14'):
+# def ask_question_about_transcription(transcription, question, api_key=OPENAI_API_KEY, model=OPENAI_MODEL):
 #     """
 #     Ask a question about a transcription using OpenAI API.
     

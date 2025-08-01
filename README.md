@@ -105,15 +105,45 @@ All endpoints return a consistent JSON structure with the MongoDB document ID an
 }
 ```
 
+**For Question Answering Endpoint**:
+
+```json
+{
+  "_id": "mongodb_object_id",
+  "transcription": "formatted_transcription_with_timestamps",
+  "question": "user_question",
+  "answer": "ai_generated_answer",
+  "chat_log_id": "chat_log_document_id"
+}
+```
+
+**For Chat History Endpoint**:
+
+```json
+{
+  "_id": "mongodb_object_id",
+  "chat_history": [
+    {
+      "_id": "chat_log_id",
+      "question": "user_question",
+      "answer": "ai_generated_answer",
+      "created_at": "2024-01-01T12:00:00.000Z"
+    }
+  ]
+}
+```
+
 ### Endpoint Details
 
-| Name                  | Method | Endpoint                       | Body                                                                       | Returns                                                      |
-| --------------------- | ------ | ------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| YouTube Transcription | `POST` | `/youtube_subtitle_transcribe` | `{ "url": "<YouTube URL>" }`                                               | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
-| Audio Transcription   | `POST` | `/whisper_file_transcribe`     | `{ "filename": "<audio file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
-| Video Transcription   | `POST` | `/video_to_audio_transcribe`   | `{ "filename": "<video file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
-| Request Summary       | `POST` | `/summarize_transcription`     | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "transcription": "...", "summary": "..." }` |
-| Generate Quiz         | `POST` | `/generate_quiz`               | `{ "_id": "<MongoDB document ID>", "quiz_level": "<easy, medium, hard>" }` | `{ "_id": "...", "transcription": "...", "mcqs": [...] }`    |
+| Name                  | Method | Endpoint                       | Body                                                                       | Returns                                                                                              |
+| --------------------- | ------ | ------------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| YouTube Transcription | `POST` | `/youtube_subtitle_transcribe` | `{ "url": "<YouTube URL>" }`                                               | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
+| Audio Transcription   | `POST` | `/whisper_file_transcribe`     | `{ "filename": "<audio file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
+| Video Transcription   | `POST` | `/video_to_audio_transcribe`   | `{ "filename": "<video file>", "language": "<lang>" }`                     | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
+| Request Summary       | `POST` | `/summarize_transcription`     | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "transcription": "...", "summary": "..." }`                                         |
+| Generate Quiz         | `POST` | `/generate_quiz`               | `{ "_id": "<MongoDB document ID>", "quiz_level": "<easy, medium, hard>" }` | `{ "_id": "...", "transcription": "...", "mcqs": [...] }`                                            |
+| Ask Question          | `POST` | `/ask_question`                | `{ "_id": "<MongoDB document ID>", "question": "<user question>" }`        | `{ "_id": "...", "transcription": "...", "question": "...", "answer": "...", "chat_log_id": "..." }` |
+| Get Chat History      | `POST` | `/get_chat_history`            | `{ "_id": "<MongoDB document ID>" }`                                       | `{ "_id": "...", "chat_history": [...] }`                                                            |
 
 ## Testing
 

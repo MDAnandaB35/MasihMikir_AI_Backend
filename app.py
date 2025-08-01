@@ -35,9 +35,11 @@ ytt_api = YouTubeTranscriptApi()
 # MongoDB setup
 mongo_client = None
 mongo_collection = None
+chat_logs_collection = None
 if MONGODB_URI:
     mongo_client = MongoClient(MONGODB_URI)
     mongo_collection = mongo_client[MONGODB_DB][MONGODB_COLLECTION]
+    chat_logs_collection = mongo_client[MONGODB_DB]["chat_logs"]
 
 # Saving transcription to MongoDB Atlas database
 def save_transcription_to_mongodb(data):
@@ -51,6 +53,29 @@ def save_transcription_to_mongodb(data):
     """
     if mongo_collection is not None:
         result = mongo_collection.insert_one(data)
+        return str(result.inserted_id)
+    return None
+
+# Saving chat logs to MongoDB Atlas database
+def save_chat_log_to_mongodb(transcription_id, question, answer):
+    """
+    Save chat log data to MongoDB Atlas chat_logs collection.
+    Args:
+        transcription_id (str): ID of the original transcription document
+        question (str): User's question
+        answer (str): AI's answer
+
+    Returns:
+        Inserted ID if successful, otherwise None
+    """
+    if chat_logs_collection is not None:
+        chat_log = {
+            'transcription_id': transcription_id,
+            'question': question,
+            'answer': answer,
+            'created_at': datetime.utcnow()
+        }
+        result = chat_logs_collection.insert_one(chat_log)
         return str(result.inserted_id)
     return None
 
@@ -592,6 +617,162 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
 
     return mcqs
 
+# Ask questions about transcription using Helpy LLM
+# def ask_question_about_transcription(transcription, question, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
+#     """
+#     Ask a question about a transcription using Helpy LLM API.
+    
+#     Args:
+#         transcription (str): The transcription text to use as context
+#         question (str): The user's question
+#         API_KEY (str): Helpy API key
+#         model (str): Helpy model name
+        
+#     Returns:
+#         str: The AI's answer to the question
+#     """
+#     url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
+    
+#     prompt = (
+#         f"You are a helpful assistant that answers questions based on a meeting transcript. "
+#         f"Please answer the following question based on the transcript provided below. "
+#         f"Only use information that is explicitly mentioned in the transcript. "
+#         f"If the answer cannot be found in the transcript, say so clearly. "
+#         f"Provide a clear, concise, and accurate answer.\n\n"
+#         f"Provide the answer in the original language of the original text. "
+#         f"Meeting Transcript:\n{transcription}\n\n"
+#         f"Question: {question}\n\n"
+#         f"Answer:"
+#     )
+    
+#     payload = {
+#         "model": model,
+#         "messages": [
+#             {
+#                 "role": "user",
+#                 "content": [
+#                     {
+#                         "type": "text",
+#                         "text": prompt
+#                     }
+#                 ]
+#             }
+#         ],
+#     }
+    
+#     headers = {
+#         "accept": "application/json",
+#         "content-type": "application/json",
+#         "Authorization": f"Bearer {API_KEY}"
+#     }
+    
+#     response = requests.post(url, json=payload, headers=headers)
+#     if response.status_code == 200:
+#         result = response.json()
+#         return result["choices"][0]["message"]["content"].strip()
+#     else:
+#         raise Exception(f"Error {response.status_code}: {response.text}")
+
+# Uncomment if want to use OpenAI instead (paid method)
+# Ask questions about transcription using OpenAI
+# def ask_question_about_transcription(transcription, question, api_key=OPENAI_API_KEY, model='gpt-4.1-nano-2025-04-14'):
+#     """
+#     Ask a question about a transcription using OpenAI API.
+    
+#     Args:
+#         transcription (str): The transcription text to use as context
+#         question (str): The user's question
+#         api_key (str): OpenAI API key
+#         model (str): OpenAI model name
+        
+#     Returns:
+#         str: The AI's answer to the question
+#     """
+#     if not api_key:
+#         raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
+    
+#     client = openai.OpenAI(api_key=api_key)
+    
+#     prompt = (
+#         f"You are a helpful assistant that answers questions based on a meeting transcript. "
+#         f"Please answer the following question based on the transcript provided below. "
+#         f"Only use information that is explicitly mentioned in the transcript. "
+#         f"If the answer cannot be found in the transcript, say so clearly. "
+#         f"Provide a clear, concise, and accurate answer.\n\n"
+#         f"Provide the answer in the original language of the original text. "
+#         f"Meeting Transcript:\n{transcription}\n\n"
+#         f"Question: {question}\n\n"
+#         f"Answer:"
+#     )
+    
+#     response = client.chat.completions.create(
+#         model=model,
+#         messages=[
+#             {"role": "system", "content": "You are a helpful assistant."},
+#             {"role": "user", "content": prompt}
+#         ],
+#         max_tokens=1000,
+#         temperature=0.3,
+#     )
+    
+#     return response.choices[0].message.content.strip()
+
+# Uncomment if want to use OpenRouter AI Models (free but slow)
+# Ask questions about transcription using OpenRouter
+def ask_question_about_transcription(transcription, question, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+    """
+    Ask a question about a transcription using OpenRouter AI Models.
+    
+    Args:
+        transcription (str): The transcription text to use as context
+        question (str): The user's question
+        AI_MODEL_API_KEY (str): OpenRouter API key
+        model (str): OpenRouter model name
+        
+    Returns:
+        str: The AI's answer to the question
+    """
+    if not AI_MODEL_API_KEY:
+        raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
+    
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    
+    prompt = (
+        f"You are a helpful assistant that answers questions based on a meeting transcript. "
+        f"Please answer the following question based on the transcript provided below. "
+        f"Only use information that is explicitly mentioned in the transcript. "
+        f"If the answer cannot be found in the transcript, say so clearly. "
+        f"Provide a clear, concise, and accurate answer.\n\n"
+        f"Provide the answer in the original language of the original text. "
+        f"Meeting Transcript:\n{transcription}\n\n"
+        f"Question: {question}\n\n"
+        f"Answer:"
+    )
+    
+    headers = {
+        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.3,
+        "max_tokens": 1000
+    }
+    
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    
+    if response.status_code == 200:
+        result = response.json()
+        return result["choices"][0]["message"]["content"].strip()
+    else:
+        raise Exception(f"Error {response.status_code}: {response.text}")
+
+
 # Helper function to summarize and save to MongoDB
 def summarize_and_save(mongo_id):
     """
@@ -741,6 +922,79 @@ def generate_quiz():
             '_id': mongo_id, 
             'transcription': transcription,
             'mcqs': mcqs
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ask_question', methods=['POST'])
+def ask_question():
+    """Ask a question about a transcription stored in MongoDB by _id."""
+    try:
+        data = request.get_json()
+        mongo_id = data.get('_id')
+        question = data.get('question')
+        
+        if not mongo_id or not question:
+            return jsonify({'error': 'Both _id and question are required'}), 400
+        
+        if mongo_collection is None:
+            return jsonify({'error': 'MongoDB not configured'}), 500
+        
+        doc = mongo_collection.find_one({'_id': ObjectId(mongo_id)})
+        if not doc:
+            return jsonify({'error': f'No document found for _id: {mongo_id}'}), 404
+        
+        transcription = doc.get('transcription')
+        if not transcription:
+            return jsonify({'error': 'No transcription found in document'}), 400
+        
+        # Truncate transcription if too long for the model
+        max_chars = 100000
+        if len(transcription) > max_chars:
+            transcription = transcription[:max_chars]
+        
+        answer = ask_question_about_transcription(transcription, question)
+        
+        # Save the chat log to the chat_logs collection
+        chat_log_id = save_chat_log_to_mongodb(mongo_id, question, answer)
+        
+        return jsonify({
+            '_id': mongo_id,
+            'transcription': transcription,
+            'question': question,
+            'answer': answer,
+            'chat_log_id': chat_log_id
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_chat_history', methods=['POST'])
+def get_chat_history():
+    """Get chat history for a specific transcription by _id."""
+    try:
+        data = request.get_json()
+        mongo_id = data.get('_id')
+        
+        if not mongo_id:
+            return jsonify({'error': 'No _id provided'}), 400
+        
+        if chat_logs_collection is None:
+            return jsonify({'error': 'MongoDB not configured'}), 500
+        
+        # Find all chat logs for this transcription
+        chat_logs = list(chat_logs_collection.find(
+            {'transcription_id': mongo_id},
+            {'_id': 1, 'question': 1, 'answer': 1, 'created_at': 1}
+        ).sort('created_at', 1))  # Sort by creation time, oldest first
+        
+        # Convert ObjectId to string for JSON serialization
+        for log in chat_logs:
+            log['_id'] = str(log['_id'])
+            log['created_at'] = log['created_at'].isoformat()
+        
+        return jsonify({
+            '_id': mongo_id,
+            'chat_history': chat_logs
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

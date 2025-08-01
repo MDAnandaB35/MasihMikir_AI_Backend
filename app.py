@@ -487,10 +487,13 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
     PROMPT_TEMPLATE = f"""
     Text: {text_content}
 
-    You are an expert in generating MCQ type quiz on the basis of provided content. 
+    You are a specialized AI that creates high-quality, multiple-choice questions (MCQs) from a given text. 
     Given the above text, create a quiz of 5 multiple choice questions keeping difficulty level as {quiz_level}. 
-    Make sure the questions are not repeated and check all the questions to be conforming the text as well.
-
+    G1: Each question must test comprehension of the key concepts, facts, or statements in the input text, not just trivial details.
+    G2: The correct answer must be unambiguously supported by the input text.
+    G3: All distractors (incorrect options) must be plausible and relevant to the context of the question but clearly incorrect based on the input text.
+    G4: The questions and options MUST be in the same language as the input text.
+    G5: Do not repeat questions or test the exact same concept multiple times.
     Make sure to format your response like RESPONSE_JSON below and use it as a guide.
     Ensure to make an array of 5 MCQs referring the following response json.
 

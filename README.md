@@ -27,6 +27,24 @@ video_files/
 
 2. **Install dependencies:**
 
+    Create and activate a virtual environment to avoid polluting your base Python installation:
+
+    On Windows:
+
+    ```sh
+    python -m venv .venv
+    .venv\Scripts\activate
+    ```
+
+    On macOS/Linux:
+
+    ```sh
+    python -m venv .venv
+    source .venv/bin/activate
+    ```
+
+    Then install the requirements:
+
     ```sh
     pip install -r requirements.txt
     ```
@@ -67,7 +85,7 @@ You can use [MasihMeeting.postman_collection.json](MasihMeeting.postman_collecti
 ## Notes
 
 -   Audio and video files should be placed in the `audio_files/` and `video_files/` directories, respectively.
--   Transcriptions and summaries are stored in MongoDB.
+-   Transcriptions and summaries are stored in `MONGODB_COLLECTION`.
 -   Requires ffmpeg installed for video-to-audio conversion.
 
 ## License

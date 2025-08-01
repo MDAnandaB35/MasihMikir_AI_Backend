@@ -366,51 +366,11 @@ def transcribe_audio_file(filename, language='en'):
 #     return response.choices[0].message.content.strip()
 
 # Generating summary with Helpy
-def summarize_text(text, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
-    """
-    Summarize meeting transcript using Helpy LLM API.
-    """
-    url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
-    prompt = (
-        "You are a professional meeting summarizer. "
-        "Read the following meeting transcript and produce a detailed, structured summary. "
-        "Organize the summary into bullet points grouped by main topics. "
-        "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
-        "Be as specific and complete as possible, including names or roles if mentioned. "
-        "Make the summary clear and useful for someone who did not attend the meeting. "
-        "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly WITH TIMESTAMPS. Each main topic should include the relevant timestamp(s) where the discussion occurred."
-        "(IMPORTANT!) Provide summary in the original language of the original text. "
-        "\n\nMeeting transcript:\n" + text
-    )
-    payload = {
-        "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }
-        ],
-    }
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 200:
-        result = response.json()
-        return result["choices"][0]["message"]["content"].strip()
-    else:
-        raise Exception(f"Error {response.status_code}: {response.text}")
-
-# Use this for free ai model from OpenRouter (but slow)
-# Summarizing text
-# def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+# def summarize_text(text, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
+#     """
+#     Summarize meeting transcript using Helpy LLM API.
+#     """
+#     url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
 #     prompt = (
 #         "You are a professional meeting summarizer. "
 #         "Read the following meeting transcript and produce a detailed, structured summary. "
@@ -418,33 +378,73 @@ def summarize_text(text, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
 #         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
 #         "Be as specific and complete as possible, including names or roles if mentioned. "
 #         "Make the summary clear and useful for someone who did not attend the meeting. "
-#         "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
+#         "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly WITH TIMESTAMPS. Each main topic should include the relevant timestamp(s) where the discussion occurred."
 #         "(IMPORTANT!) Provide summary in the original language of the original text. "
 #         "\n\nMeeting transcript:\n" + text
 #     )
-
-#     url = "https://openrouter.ai/api/v1/chat/completions"
-#     headers = {
-#         "Authorization": f"Bearer {AI_MODEL_API_KEY}",
-#         "Content-Type": "application/json"
-#     }
-
 #     payload = {
 #         "model": model,
 #         "messages": [
-#             {"role": "system", "content": "You are a helpful assistant."},
-#             {"role": "user", "content": prompt}
+#             {
+#                 "role": "user",
+#                 "content": [
+#                     {
+#                         "type": "text",
+#                         "text": prompt
+#                     }
+#                 ]
+#             }
 #         ],
-#         "temperature": 0.5
 #     }
-
-#     response = requests.post(url, headers=headers, data=json.dumps(payload))
-
+#     headers = {
+#         "accept": "application/json",
+#         "content-type": "application/json",
+#         "Authorization": f"Bearer {API_KEY}"
+#     }
+#     response = requests.post(url, json=payload, headers=headers)
 #     if response.status_code == 200:
 #         result = response.json()
 #         return result["choices"][0]["message"]["content"].strip()
 #     else:
 #         raise Exception(f"Error {response.status_code}: {response.text}")
+
+# Use this for free ai model from OpenRouter (but slow)
+# Summarizing text
+def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+    prompt = (
+        "You are a professional meeting summarizer. "
+        "Read the following meeting transcript and produce a detailed, structured summary. "
+        "Organize the summary into bullet points grouped by main topics. "
+        "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
+        "Be as specific and complete as possible, including names or roles if mentioned. "
+        "Make the summary clear and useful for someone who did not attend the meeting. "
+        "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
+        "(IMPORTANT!) Provide summary in the original language of the original text. "
+        "\n\nMeeting transcript:\n" + text
+    )
+
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.5
+    }
+
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+    if response.status_code == 200:
+        result = response.json()
+        return result["choices"][0]["message"]["content"].strip()
+    else:
+        raise Exception(f"Error {response.status_code}: {response.text}")
 
 
 # Generating quiz with OpenAI
@@ -1058,4 +1058,4 @@ def get_chat_history():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=6969)

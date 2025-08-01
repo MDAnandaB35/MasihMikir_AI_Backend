@@ -7,8 +7,8 @@ This is the backend service for MasihMeeting, providing APIs for transcribing, s
 -   **Transcribe YouTube Videos:** Extracts subtitles/transcripts from YouTube videos and saves them to MongoDB.
 -   **Transcribe Audio Files:** Uses OpenAI Whisper API to transcribe uploaded audio files.
 -   **Transcribe Video Files:** Converts video files to audio, then transcribes using Whisper.
--   **Summarize Transcriptions:** Summarizes meeting transcripts using DeepSeek or OpenAI models.
--   **Generate Quizzes:** Generates multiple-choice questions (MCQs) from transcriptions using DeepSeek or OpenAI.
+-   **Summarize Transcriptions:** Summarizes meeting transcripts using models from OpenRouter (e.g., Google Gemini, Llama) or OpenAI.
+-   **Generate Quizzes:** Generates multiple-choice questions (MCQs) from transcriptions using models from OpenRouter or OpenAI.
 
 ## Folder Structure
 
@@ -54,7 +54,8 @@ video_files/
 
     ```
     OPENAI_API_KEY=your_openai_api_key
-    DEEPSEEK_API_KEY=your_deepseek_api_key
+    AI_MODEL_API_KEY=your_openrouter_api_key
+    AI_MODEL_NAME=your_ai_model_name
     MONGODB_URI=your_mongodb_uri
     MONGODB_DB=your_db_name
     MONGODB_COLLECTION=your_collection_name

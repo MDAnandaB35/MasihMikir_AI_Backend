@@ -73,7 +73,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_id\": \"688871715de12d09a76183a0\"\r\n}",
+					"raw": "{\r\n    \"_id\": \"688c73efa7794140edbab5d0\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "text"
@@ -81,12 +81,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/summarize_transcription",
+					"raw": "http://localhost:6969/summarize_transcription",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "5000",
+					"port": "6969",
 					"path": [
 						"summarize_transcription"
 					]
@@ -155,7 +155,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"url\" : \"https://www.youtube.com/watch?v=vwR0pjwuIAQ&pp=0gcJCccJAYcqIYzv\"\r\n}",
+					"raw": "{\r\n    \"url\" : \"https://www.youtube.com/watch?v=E4s_JGwnGws&pp=ugUEEgJlbg%3D%3D\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "text"
@@ -163,12 +163,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/youtube_subtitle_transcribe",
+					"raw": "http://localhost:6969/youtube_subtitle_transcribe",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "5000",
+					"port": "6969",
 					"path": [
 						"youtube_subtitle_transcribe"
 					]
@@ -255,7 +255,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_id\": \"68871ff8b64ef2ad20336e23\",\r\n    \"quiz_level\": \"easy\"\r\n}",
+					"raw": "{\r\n    \"_id\": \"688c5ecad5fbe0f89ee78ff4\",\r\n    \"quiz_level\": \"easy\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "text"
@@ -263,12 +263,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/generate_quiz",
+					"raw": "http://localhost:6969/generate_quiz",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "5000",
+					"port": "6969",
 					"path": [
 						"generate_quiz"
 					]
@@ -351,12 +351,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/video_to_audio_transcribe",
+					"raw": "http://localhost:6969/video_to_audio_transcribe",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "5000",
+					"port": "6969",
 					"path": [
 						"video_to_audio_transcribe"
 					]
@@ -433,12 +433,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/whisper_file_transcribe",
+					"raw": "http://localhost:6969/whisper_file_transcribe",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "5000",
+					"port": "6969",
 					"path": [
 						"whisper_file_transcribe"
 					]
@@ -507,7 +507,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_id\" : \"688c428aaf2a1b31490f7350\",\r\n    \"question\" : \"Who are present in this meeting?\"\r\n}",
+					"raw": "{\r\n    \"_id\" : \"688c5ecad5fbe0f89ee78ff4\",\r\n    \"question\" : \"Thank you!\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "text"
@@ -515,12 +515,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/ask_question",
+					"raw": "http://localhost:6969/ask_question",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "5000",
+					"port": "6969",
 					"path": [
 						"ask_question"
 					]
@@ -591,12 +591,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:5000/get_chat_history",
+					"raw": "http://localhost:6969/get_chat_history",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "5000",
+					"port": "6969",
 					"path": [
 						"get_chat_history"
 					]

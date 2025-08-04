@@ -763,6 +763,7 @@ def ask_question_about_transcription(transcription, question, conversation_histo
     Returns:
         str: The AI's answer to the question
     """
+    
     if not AI_MODEL_API_KEY:
         raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
     

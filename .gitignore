@@ -14,6 +14,8 @@
 
 .env
 
+venv
+
 quiz_generator.py
 send_video.py
 test.py

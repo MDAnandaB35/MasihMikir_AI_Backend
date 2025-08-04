@@ -265,9 +265,9 @@ def transcribe_youtube_video(youtube_url):
 async def transcribe_audio_file_async(filename, language='en'):
     """
     Transcribe audio file using OpenAI Whisper API and return detailed result with timestamps.
-    
+
     Returns:
-        dict: Contains 'text', 'segments', and optionally 'formatted'
+        dict: Contains 'text', 'segments', and 'formatted'
     """
     if not OPENAI_API_KEY:
         raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
@@ -287,10 +287,10 @@ async def transcribe_audio_file_async(filename, language='en'):
             file=(filename, audio_data),
             language=language,
             response_format="verbose_json",
-            timestamp_granularities=["segment"]
+            timestamp_granularities=["segment"],
         )
 
-        # Format segments into readable string with timestamps
+        # Helper functions
         def format_time(seconds):
             minutes = int(seconds) // 60
             secs = int(seconds) % 60
@@ -299,16 +299,16 @@ async def transcribe_audio_file_async(filename, language='en'):
         def format_segments(segments):
             lines = []
             for seg in segments:
-                start = format_time(seg["start"])
-                end = format_time(seg["end"])
-                lines.append(f"[{start} - {end}] {seg['text']}")
+                start = format_time(seg.start)
+                end = format_time(seg.end)
+                lines.append(f"[{start} - {end}] {seg.text}")
             return "\n".join(lines)
 
         formatted_text = format_segments(transcript.segments)
 
         return {
             "text": transcript.text,
-            "segments": transcript.segments,
+            "segments": [s.model_dump() for s in transcript.segments],
             "formatted": formatted_text
         }
 

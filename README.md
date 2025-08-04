@@ -59,7 +59,6 @@ video_files/
    OPENAI_MODEL=your_openai_model_name
    AI_MODEL_API_KEY=your_openrouter_api_key
    AI_MODEL_NAME=your_openrouter_model_name
-   HELPY_API_KEY=your_helpy_api_key
    MONGODB_URI=your_mongodb_uri
    MONGODB_DB=your_db_name
    MONGODB_COLLECTION=your_collection_name
@@ -171,15 +170,15 @@ The application supports multiple AI providers for different functionalities:
 
 ### Summarization
 
-- **Helpy** (Default): Fast and reliable summarization
+- **Helpy**: Fast and unreliable summarization
 - **OpenAI**: High-quality but paid service
-- **OpenRouter**: Free but slower alternative
+- **OpenRouter** (Default): Free but slower alternative
 
 ### Question Answering
 
 - **OpenRouter** (Default): Free AI models with conversation memory
 - **OpenAI**: High-quality but paid service
-- **Helpy**: Fast alternative
+- **Helpy**: Inconsistent
 
 ### Quiz Generation
 

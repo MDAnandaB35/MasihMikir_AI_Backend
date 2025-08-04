@@ -1,96 +1,89 @@
 {
 	"info": {
 		"_postman_id": "b96740ae-cf05-44fa-8b3e-7d7841fc6db9",
-		"name": "MasihMeeting",
+		"name": "MasihMeeting - Improved API",
+		"description": "Updated collection for the improved MasihMeeting AI Backend API with better error handling, validation, and security features.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "46336264"
 	},
 	"item": [
 		{
-			"name": "Request Summary",
+			"name": "Health Check",
 			"request": {
-				"method": "POST",
+				"method": "GET",
 				"header": [
 					{
-						"key": "Cache-Control",
-						"value": "no-cache",
-						"name": "cache-control",
-						"type": "text"
-					},
-					{
-						"key": "Postman-Token",
-						"value": "<calculated when request is sent>",
-						"name": "postman-token",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
-						"value": "text/plain",
-						"name": "content-type",
-						"type": "text"
-					},
-					{
-						"key": "Content-Length",
-						"value": "<calculated when request is sent>",
-						"name": "content-length",
-						"type": "text"
-					},
-					{
-						"key": "Host",
-						"value": "<calculated when request is sent>",
-						"name": "host",
-						"type": "text"
-					},
-					{
-						"key": "User-Agent",
-						"value": "PostmanRuntime/7.39.1",
-						"name": "user-agent",
-						"type": "text"
-					},
-					{
 						"key": "Accept",
-						"value": "*/*",
-						"name": "accept",
-						"type": "text"
-					},
-					{
-						"key": "Accept-Encoding",
-						"value": "gzip, deflate, br",
-						"name": "accept-encoding",
-						"type": "text"
-					},
-					{
-						"key": "Connection",
-						"value": "keep-alive",
-						"name": "connection",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
 						"value": "application/json",
 						"type": "text"
 					}
 				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"_id\": \"688c73efa7794140edbab5d0\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "text"
-						}
-					}
-				},
 				"url": {
-					"raw": "http://localhost:6969/summarize_transcription",
+					"raw": "http://localhost:6969/health",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "6969",
 					"path": [
-						"summarize_transcription"
+						"health"
 					]
-				}
+				},
+				"description": "Check the overall health of the application including database connection"
+			},
+			"response": []
+		},
+		{
+			"name": "API Health Check",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:6969/api/v1/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6969",
+					"path": [
+						"api",
+						"v1",
+						"health"
+					]
+				},
+				"description": "Check the health of the API endpoints specifically"
+			},
+			"response": []
+		},
+		{
+			"name": "Root Endpoint",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:6969/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6969",
+					"path": [
+						""
+					]
+				},
+				"description": "Get API information and available endpoints"
 			},
 			"response": []
 		},
@@ -100,267 +93,39 @@
 				"method": "POST",
 				"header": [
 					{
-						"key": "Cache-Control",
-						"value": "no-cache",
-						"name": "cache-control",
-						"type": "text"
-					},
-					{
-						"key": "Postman-Token",
-						"value": "<calculated when request is sent>",
-						"name": "postman-token",
-						"type": "text"
-					},
-					{
-						"key": "Content-Length",
-						"value": "0",
-						"name": "content-length",
-						"type": "text"
-					},
-					{
-						"key": "Host",
-						"value": "<calculated when request is sent>",
-						"name": "host",
-						"type": "text"
-					},
-					{
-						"key": "User-Agent",
-						"value": "PostmanRuntime/7.39.1",
-						"name": "user-agent",
+						"key": "Content-Type",
+						"value": "application/json",
 						"type": "text"
 					},
 					{
 						"key": "Accept",
-						"value": "*/*",
-						"name": "accept",
-						"type": "text"
-					},
-					{
-						"key": "Accept-Encoding",
-						"value": "gzip, deflate, br",
-						"name": "accept-encoding",
-						"type": "text"
-					},
-					{
-						"key": "Connection",
-						"value": "keep-alive",
-						"name": "connection",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
 						"value": "application/json",
 						"type": "text"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"url\" : \"https://www.youtube.com/watch?v=E4s_JGwnGws&pp=ugUEEgJlbg%3D%3D\"\r\n}",
+					"raw": "{\n    \"url\": \"https://www.youtube.com/watch?v=E4s_JGwnGws\"\n}",
 					"options": {
 						"raw": {
-							"language": "text"
+							"language": "json"
 						}
 					}
 				},
 				"url": {
-					"raw": "http://localhost:6969/youtube_subtitle_transcribe",
+					"raw": "http://localhost:6969/api/v1/youtube_subtitle_transcribe",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "6969",
 					"path": [
+						"api",
+						"v1",
 						"youtube_subtitle_transcribe"
 					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Generate Quiz",
-			"event": [
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							""
-						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Cache-Control",
-						"value": "no-cache",
-						"name": "cache-control",
-						"type": "text"
-					},
-					{
-						"key": "Postman-Token",
-						"value": "<calculated when request is sent>",
-						"name": "postman-token",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
-						"value": "text/plain",
-						"name": "content-type",
-						"type": "text"
-					},
-					{
-						"key": "Content-Length",
-						"value": "<calculated when request is sent>",
-						"name": "content-length",
-						"type": "text"
-					},
-					{
-						"key": "Host",
-						"value": "<calculated when request is sent>",
-						"name": "host",
-						"type": "text"
-					},
-					{
-						"key": "User-Agent",
-						"value": "PostmanRuntime/7.39.1",
-						"name": "user-agent",
-						"type": "text"
-					},
-					{
-						"key": "Accept",
-						"value": "*/*",
-						"name": "accept",
-						"type": "text"
-					},
-					{
-						"key": "Accept-Encoding",
-						"value": "gzip, deflate, br",
-						"name": "accept-encoding",
-						"type": "text"
-					},
-					{
-						"key": "Connection",
-						"value": "keep-alive",
-						"name": "connection",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"_id\": \"688c5ecad5fbe0f89ee78ff4\",\r\n    \"quiz_level\": \"easy\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "text"
-						}
-					}
 				},
-				"url": {
-					"raw": "http://localhost:6969/generate_quiz",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "6969",
-					"path": [
-						"generate_quiz"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Video Transcription",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Cache-Control",
-						"value": "no-cache",
-						"name": "cache-control",
-						"type": "text"
-					},
-					{
-						"key": "Postman-Token",
-						"value": "<calculated when request is sent>",
-						"name": "postman-token",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
-						"value": "text/plain",
-						"name": "content-type",
-						"type": "text"
-					},
-					{
-						"key": "Content-Length",
-						"value": "<calculated when request is sent>",
-						"name": "content-length",
-						"type": "text"
-					},
-					{
-						"key": "Host",
-						"value": "<calculated when request is sent>",
-						"name": "host",
-						"type": "text"
-					},
-					{
-						"key": "User-Agent",
-						"value": "PostmanRuntime/7.39.1",
-						"name": "user-agent",
-						"type": "text"
-					},
-					{
-						"key": "Accept",
-						"value": "*/*",
-						"name": "accept",
-						"type": "text"
-					},
-					{
-						"key": "Accept-Encoding",
-						"value": "gzip, deflate, br",
-						"name": "accept-encoding",
-						"type": "text"
-					},
-					{
-						"key": "Connection",
-						"value": "keep-alive",
-						"name": "connection",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "   {\r\n     \"filename\": \"example1.mp4\",\r\n     \"language\": \"en\" \r\n   }",
-					"options": {
-						"raw": {
-							"language": "text"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:6969/video_to_audio_transcribe",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "6969",
-					"path": [
-						"video_to_audio_transcribe"
-					]
-				}
+				"description": "Transcribe a YouTube video using subtitles. Automatically generates a summary."
 			},
 			"response": []
 		},
@@ -370,79 +135,194 @@
 				"method": "POST",
 				"header": [
 					{
-						"key": "Cache-Control",
-						"value": "no-cache",
-						"name": "cache-control",
-						"type": "text"
-					},
-					{
-						"key": "Postman-Token",
-						"value": "<calculated when request is sent>",
-						"name": "postman-token",
-						"type": "text"
-					},
-					{
-						"key": "Content-Length",
-						"value": "0",
-						"name": "content-length",
-						"type": "text"
-					},
-					{
-						"key": "Host",
-						"value": "<calculated when request is sent>",
-						"name": "host",
-						"type": "text"
-					},
-					{
-						"key": "User-Agent",
-						"value": "PostmanRuntime/7.39.1",
-						"name": "user-agent",
+						"key": "Content-Type",
+						"value": "application/json",
 						"type": "text"
 					},
 					{
 						"key": "Accept",
-						"value": "*/*",
-						"name": "accept",
-						"type": "text"
-					},
-					{
-						"key": "Accept-Encoding",
-						"value": "gzip, deflate, br",
-						"name": "accept-encoding",
-						"type": "text"
-					},
-					{
-						"key": "Connection",
-						"value": "keep-alive",
-						"name": "connection",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
 						"value": "application/json",
 						"type": "text"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"filename\" : \"\"\r\n    \"language\" : \"en\"\r\n}",
+					"raw": "{\n    \"filename\": \"audio.mp3\",\n    \"language\": \"en\"\n}",
 					"options": {
 						"raw": {
-							"language": "text"
+							"language": "json"
 						}
 					}
 				},
 				"url": {
-					"raw": "http://localhost:6969/whisper_file_transcribe",
+					"raw": "http://localhost:6969/api/v1/whisper_file_transcribe",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "6969",
 					"path": [
+						"api",
+						"v1",
 						"whisper_file_transcribe"
 					]
-				}
+				},
+				"description": "Transcribe an audio file using OpenAI Whisper API. Automatically generates a summary."
+			},
+			"response": []
+		},
+		{
+			"name": "Video Transcription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"filename\": \"example1.mp4\",\n    \"language\": \"en\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:6969/api/v1/video_to_audio_transcribe",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6969",
+					"path": [
+						"api",
+						"v1",
+						"video_to_audio_transcribe"
+					]
+				},
+				"description": "Convert video to audio and transcribe. Automatically generates a summary."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Transcription",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:6969/api/v1/get_transcription/{{transcription_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6969",
+					"path": [
+						"api",
+						"v1",
+						"get_transcription",
+						"{{transcription_id}}"
+					]
+				},
+				"description": "Get a transcription by its MongoDB ID"
+			},
+			"response": []
+		},
+		{
+			"name": "Request Summary",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"_id\": \"{{transcription_id}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:6969/api/v1/summarize_transcription",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6969",
+					"path": [
+						"api",
+						"v1",
+						"summarize_transcription"
+					]
+				},
+				"description": "Generate a summary for an existing transcription"
+			},
+			"response": []
+		},
+		{
+			"name": "Generate Quiz",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"_id\": \"{{transcription_id}}\",\n    \"quiz_level\": \"easy\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:6969/api/v1/generate_quiz",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6969",
+					"path": [
+						"api",
+						"v1",
+						"generate_quiz"
+					]
+				},
+				"description": "Generate quiz questions from a transcription. Quiz levels: easy, medium, hard"
 			},
 			"response": []
 		},
@@ -452,157 +332,91 @@
 				"method": "POST",
 				"header": [
 					{
-						"key": "Cache-Control",
-						"value": "no-cache",
-						"name": "cache-control",
-						"type": "text"
-					},
-					{
-						"key": "Postman-Token",
-						"value": "<calculated when request is sent>",
-						"name": "postman-token",
-						"type": "text"
-					},
-					{
-						"key": "Content-Length",
-						"value": "0",
-						"name": "content-length",
-						"type": "text"
-					},
-					{
-						"key": "Host",
-						"value": "<calculated when request is sent>",
-						"name": "host",
-						"type": "text"
-					},
-					{
-						"key": "User-Agent",
-						"value": "PostmanRuntime/7.39.1",
-						"name": "user-agent",
+						"key": "Content-Type",
+						"value": "application/json",
 						"type": "text"
 					},
 					{
 						"key": "Accept",
-						"value": "*/*",
-						"name": "accept",
-						"type": "text"
-					},
-					{
-						"key": "Accept-Encoding",
-						"value": "gzip, deflate, br",
-						"name": "accept-encoding",
-						"type": "text"
-					},
-					{
-						"key": "Connection",
-						"value": "keep-alive",
-						"name": "connection",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
 						"value": "application/json",
 						"type": "text"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_id\" : \"688c5ecad5fbe0f89ee78ff4\",\r\n    \"question\" : \"Thank you!\"\r\n}",
+					"raw": "{\n    \"_id\": \"{{transcription_id}}\",\n    \"question\": \"What was discussed about the budget?\"\n}",
 					"options": {
 						"raw": {
-							"language": "text"
+							"language": "json"
 						}
 					}
 				},
 				"url": {
-					"raw": "http://localhost:6969/ask_question",
+					"raw": "http://localhost:6969/api/v1/ask_question",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "6969",
 					"path": [
+						"api",
+						"v1",
 						"ask_question"
 					]
-				}
+				},
+				"description": "Ask a question about a transcription with conversation memory"
 			},
 			"response": []
 		},
 		{
-			"name": "Retreive Chat Logs",
+			"name": "Retrieve Chat History",
 			"request": {
 				"method": "POST",
 				"header": [
 					{
-						"key": "Cache-Control",
-						"value": "no-cache",
-						"name": "cache-control",
-						"type": "text"
-					},
-					{
-						"key": "Postman-Token",
-						"value": "<calculated when request is sent>",
-						"name": "postman-token",
-						"type": "text"
-					},
-					{
-						"key": "Host",
-						"value": "<calculated when request is sent>",
-						"name": "host",
-						"type": "text"
-					},
-					{
-						"key": "User-Agent",
-						"value": "PostmanRuntime/7.39.1",
-						"name": "user-agent",
+						"key": "Content-Type",
+						"value": "application/json",
 						"type": "text"
 					},
 					{
 						"key": "Accept",
-						"value": "*/*",
-						"name": "accept",
-						"type": "text"
-					},
-					{
-						"key": "Accept-Encoding",
-						"value": "gzip, deflate, br",
-						"name": "accept-encoding",
-						"type": "text"
-					},
-					{
-						"key": "Connection",
-						"value": "keep-alive",
-						"name": "connection",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
 						"value": "application/json",
 						"type": "text"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_id\" : \"688c5ecad5fbe0f89ee78ff4\"\r\n}",
+					"raw": "{\n    \"_id\": \"{{transcription_id}}\"\n}",
 					"options": {
 						"raw": {
-							"language": "text"
+							"language": "json"
 						}
 					}
 				},
 				"url": {
-					"raw": "http://localhost:6969/get_chat_history",
+					"raw": "http://localhost:6969/api/v1/get_chat_history",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "6969",
 					"path": [
+						"api",
+						"v1",
 						"get_chat_history"
 					]
-				}
+				},
+				"description": "Get chat history for a specific transcription"
 			},
 			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "transcription_id",
+			"value": "your_transcription_id_here",
+			"type": "string",
+			"description": "Replace with an actual MongoDB ObjectId from a transcription"
 		}
 	]
 }

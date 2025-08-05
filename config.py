@@ -4,11 +4,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    """Centralized configuration management"""
-    
     # OpenAI Configuration
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+    OPENAI_MODEL = os.environ.get('OPENAI_MODEL')
     
     # Folder paths
     AUDIO_FOLDER = os.environ.get('AUDIO_FOLDER', 'audio_files')
@@ -21,8 +19,8 @@ class Config:
     MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
     
     # OpenRouter AI Model Configuration
-    AI_MODEL_API_KEY = os.environ.get('AI_MODEL_API_KEY')
-    AI_MODEL_NAME = os.environ.get('AI_MODEL_NAME', 'mistralai/mistral-7b-instruct')
+    AI_MODEL_API_KEY = "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" 
+    AI_MODEL_NAME = os.environ.get('AI_MODEL_NAME')
     
     # Helpy API Configuration
     HELPY_API_KEY = os.environ.get('HELPY_API_KEY')

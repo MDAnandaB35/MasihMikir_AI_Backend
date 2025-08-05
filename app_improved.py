@@ -6,11 +6,13 @@ import logging
 import os
 import atexit
 
+# Utilizing Flask Blueprints for reusable components
 from config import Config
 from database import db
 from routes import api
 
 # Configure logging
+# Time stamp, name, level (log level), message
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -18,7 +20,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def create_app():
-    """Application factory pattern"""
     app = Flask(__name__)
     
     # Configure app
@@ -28,13 +29,14 @@ def create_app():
     # Security headers
     @app.after_request
     def add_security_headers(response):
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        response.headers['X-Content-Type-Options'] = 'nosniff' # Prevent guessing the content type
+        response.headers['X-Frame-Options'] = 'DENY' # Prevent being embedded in an iframe
+        response.headers['X-XSS-Protection'] = '1; mode=block' # Block cross-site scripting attacks
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains' # Force HTTPS
         return response
     
     # CORS configuration
+    # Allows all origins (Change for specific IP)
     CORS(app, origins=['*'], methods=['GET', 'POST', 'PUT', 'DELETE'])
     
     # Rate limiting
@@ -48,11 +50,12 @@ def create_app():
     app.register_blueprint(api, url_prefix='/api/v1')
     
     # Health check endpoint
+    # Test database connection
     @app.route('/health', methods=['GET'])
     def health_check():
         """Root health check endpoint"""
         try:
-            # Test database connection
+            # Test database connection ping
             db.client.admin.command('ping')
             return jsonify({
                 'status': 'healthy',

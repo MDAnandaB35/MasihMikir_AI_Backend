@@ -218,67 +218,6 @@ def transcribe_youtube_video(youtube_url):
     }
 
 # Transcribing audio file using OpenAI Whisper API
-# Without timestamp
-# async def transcribe_audio_file_async(filename, language='en'):
-#     """
-#     Transcribe audio file using OpenAI Whisper API.
-    
-#     Args:
-#         filename (str): Name of the audio file
-#         language (str): Language code for transcription
-        
-#     Returns:
-#         str: Transcription text
-        
-#     Raises:
-#         Exception: If transcription fails
-#     """
-#     if not OPENAI_API_KEY:
-#         raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
-    
-#     file_path = os.path.join(AUDIO_FOLDER, filename)
-#     if not os.path.isfile(file_path):
-#         raise Exception(f'File not found: {file_path}')
-    
-#     try:
-#         with open(file_path, 'rb') as audio_file:
-#             audio_data = audio_file.read()
-        
-#         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
-#         transcript = await client.audio.transcriptions.create(
-#             model="whisper-1",
-#             file=(filename, audio_data),
-#             language=language
-#         )
-#         return transcript.text
-#     except Exception as e:
-#         raise Exception(f'Failed to transcribe audio: {str(e)}')
-
-# # Saving to MongoDB
-# def transcribe_audio_file(filename, language='en'):
-#     """
-#     Synchronous wrapper for audio transcription.
-    
-#     Args:
-#         filename (str): Name of the audio file
-#         language (str): Language code for transcription
-        
-#     Returns:
-#         str: Transcription text
-#     """
-#     transcription = asyncio.run(transcribe_audio_file_async(filename, language))
-#     # Save to MongoDB
-#     doc = {
-#         'type': 'audio',
-#         'filename': filename,
-#         'language': language,
-#         'transcription': transcription,
-#         'created_at': datetime.utcnow()
-#     }
-#     inserted_id = save_transcription_to_mongodb(doc)
-#     return transcription
-
-# Transcribing audio file using OpenAI Whisper API
 # With timestamp
 async def transcribe_audio_file_async(filename, language='en'):
     """

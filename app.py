@@ -15,8 +15,21 @@ from bson import ObjectId
 import json
 import subprocess
 import re
+import logging
+import time
 
 app = Flask(__name__)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console handler
+        logging.FileHandler('ai_backend.log')  # File handler
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Initializing environment variables
 # OpenAI
@@ -39,6 +52,11 @@ AI_MODEL_NAME = os.environ.get('AI_MODEL_NAME')
 
 # Helpy API Key
 HELPY_API_KEY = os.environ.get('HELPY_API_KEY')
+
+# AI Model Selection
+AI_MODEL_IN_USE = os.environ.get('AI_MODEL_IN_USE', 'openrouter').lower()
+
+
 
 ytt_api = YouTubeTranscriptApi()
 
@@ -339,78 +357,16 @@ def transcribe_audio_file(filename, language='en'):
             'transcription': result['formatted'],
         }
 
-# Uncomment if want to use OpenAI instead (paid method)
-# Summarizing text using OpenAI
-# def summarize_text(text, api_key=OPENAI_API_KEY, model=OPENAI_MODEL, max_tokens=4096):
-#     client = openai.OpenAI(api_key=api_key)
-#     prompt = (
-#         "You are a professional meeting summarizer. "
-#         "Read the following meeting transcript and produce a detailed, structured summary. "
-#         "Organize the summary into bullet points grouped by main topics. "
-#         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
-#         "Be as specific and complete as possible, including names or roles if mentioned. "
-#         "Make the summary clear and useful for someone who did not attend the meeting. "
-#         "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
-#         "(IMPORTANT!) Provide summary in the original language of the original text. "
-#         "\n\nMeeting transcript:\n" + text
-#     )
-#     response = client.chat.completions.create(
-#         model=model,
-#         messages=[
-#             {"role": "system", "content": "You are a helpful assistant."},
-#             {"role": "user", "content": prompt}
-#         ],
-#         max_tokens=max_tokens,
-#         temperature=0.5,
-#     )
-#     return response.choices[0].message.content.strip()
 
-# Generating summary with Helpy
-# def summarize_text(text, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
-#     """
-#     Summarize meeting transcript using Helpy LLM API.
-#     """
-#     url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
-#     prompt = (
-#         "You are a professional meeting summarizer. "
-#         "Read the following meeting transcript and produce a detailed, structured summary. "
-#         "Organize the summary into bullet points grouped by main topics. "
-#         "For each topic, include sub-bullets for key decisions, action items, and important discussions. "
-#         "Be as specific and complete as possible, including names or roles if mentioned. "
-#         "Make the summary clear and useful for someone who did not attend the meeting. "
-#         "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly WITH TIMESTAMPS. Each main topic should include the relevant timestamp(s) where the discussion occurred."
-#         "(IMPORTANT!) Provide summary in the original language of the original text. "
-#         "\n\nMeeting transcript:\n" + text
-#     )
-#     payload = {
-#         "model": model,
-#         "messages": [
-#             {
-#                 "role": "user",
-#                 "content": [
-#                     {
-#                         "type": "text",
-#                         "text": prompt
-#                     }
-#                 ]
-#             }
-#         ],
-#     }
-#     headers = {
-#         "accept": "application/json",
-#         "content-type": "application/json",
-#         "Authorization": f"Bearer {API_KEY}"
-#     }
-#     response = requests.post(url, json=payload, headers=headers)
-#     if response.status_code == 200:
-#         result = response.json()
-#         return result["choices"][0]["message"]["content"].strip()
-#     else:
-#         raise Exception(f"Error {response.status_code}: {response.text}")
 
-# Use this for free ai model from OpenRouter (but slow)
-# Summarizing text
-def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+# Unified summarize_text function with AI model selection
+def summarize_text(text):
+    """
+    Summarize meeting transcript using the selected AI model based on AI_MODEL_IN_USE environment variable.
+    """
+    start_time = time.time()
+    logger.info(f"Starting text summarization using AI model: {AI_MODEL_IN_USE.upper()}")
+    
     prompt = (
         "You are a professional meeting summarizer. "
         "Read the following meeting transcript and produce a detailed, structured summary. "
@@ -419,118 +375,100 @@ def summarize_text(text, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME)
         "Be as specific and complete as possible, including names or roles if mentioned. "
         "Make the summary clear and useful for someone who did not attend the meeting. "
         "(IMPORTANT!) If timestamps are present in the transcript, you MUST use them to group and label each section accordingly. Each main topic should include the relevant timestamp(s) where the discussion occurred."
-        "(IMPORTANT!) Provide summary in the original language of the original text. "
+        "(CRITICAL!) You MUST respond in the EXACT SAME LANGUAGE as the input text. Do not translate or change languages."
         "\n\nMeeting transcript:\n" + text
     )
 
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.5
-    }
-
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-
-    if response.status_code == 200:
-        result = response.json()
-        return result["choices"][0]["message"]["content"].strip()
+    if AI_MODEL_IN_USE == 'openai':
+        if not OPENAI_API_KEY:
+            raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
+        
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant. You MUST always respond in the same language as the input text provided by the user. Do not translate or change languages."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=4096,
+            temperature=0.5,
+        )
+        result = response.choices[0].message.content.strip()
+    
+    elif AI_MODEL_IN_USE == 'helpy':
+        if not HELPY_API_KEY:
+            raise Exception('Helpy API key not set in HELPY_API_KEY env variable')
+        
+        url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
+        payload = {
+            "model": "helpy-v-reasoning-c",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+        }
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "Authorization": f"Bearer {HELPY_API_KEY}"
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 200:
+            result = response.json()
+            result = result["choices"][0]["message"]["content"].strip()
+        else:
+            raise Exception(f"Error {response.status_code}: {response.text}")
+    
+    elif AI_MODEL_IN_USE == 'openrouter':
+        if not AI_MODEL_API_KEY:
+            raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
+        
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {AI_MODEL_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": AI_MODEL_NAME,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant. You MUST always respond in the same language as the input text provided by the user. Do not translate or change languages."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.5
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            result = response.json()
+            result = result["choices"][0]["message"]["content"].strip()
+        else:
+            raise Exception(f"Error {response.status_code}: {response.text}")
+    
     else:
-        raise Exception(f"Error {response.status_code}: {response.text}")
+        raise Exception(f'Unsupported AI model: {AI_MODEL_IN_USE}. Supported values: openai, helpy, openrouter')
+    
+    end_time = time.time()
+    processing_time = end_time - start_time
+    logger.info(f"Text summarization completed in {processing_time:.2f} seconds using {AI_MODEL_IN_USE.upper()}")
+    
+    return result
 
 
-# Generating quiz with OpenAI
-# Generating Quiz
-# def generate_mcqs(text_content, quiz_level, api_key=OPENAI_API_KEY, model=OPENAI_MODEL): 
-#     RESPONSE_JSON = {
-#       "mcqs" : [
-#         {
-#             "mcq": "multiple choice question1",
-#             "options": {
-#                 "a": "choice here1",
-#                 "b": "choice here2",
-#                 "c": "choice here3",
-#                 "d": "choice here4",
-#             },
-#             "correct": "correct choice option in the form of a, b, c or d",
-#         },
-#         {
-#             "mcq": "multiple choice question",
-#             "options": {
-#                 "a": "choice here",
-#                 "b": "choice here",
-#                 "c": "choice here",
-#                 "d": "choice here",
-#             },
-#             "correct": "correct choice option in the form of a, b, c or d",
-#         },
-#         {
-#             "mcq": "multiple choice question",
-#             "options": {
-#                 "a": "choice here",
-#                 "b": "choice here",
-#                 "c": "choice here",
-#                 "d": "choice here",
-#             },
-#             "correct": "correct choice option in the form of a, b, c or d",
-#         }
-#       ]
-#     }
 
-#     PROMPT_TEMPLATE="""
-#     Text: {text_content}
-#     You are an expert in generating MCQ type quiz on the basis of provided content. 
-#     Given the above text, create a quiz of 3 multiple choice questions keeping difficulty level as {quiz_level}. 
-#     Make sure the questions are not repeated and check all the questions to be conforming the text as well.
-#     Make sure to format your response like RESPONSE_JSON below and use it as a guide.
-#     Ensure to make an array of 3 MCQs referring the following response json.
-#     Here is the RESPONSE_JSON: 
 
-#     {RESPONSE_JSON}
-
-#     """
-
-#     formatted_template = PROMPT_TEMPLATE.format(text_content=text_content, quiz_level=quiz_level, RESPONSE_JSON=RESPONSE_JSON)
-
-#     client = openai.OpenAI(api_key=api_key)
-#     response = client.chat.completions.create(
-#         model=model,
-#         messages=[
-#             {
-#                 "role": "user",
-#                 "content" : formatted_template
-#             }
-#         ],
-#         temperature=0.3,
-#         max_tokens=1000,
-#         top_p=1,
-#         frequency_penalty=0,
-#         presence_penalty=0
-#     )
-
-#     extracted_response = response.choices[0].message.content
-#     try:
-#         mcqs = json.loads(extracted_response).get("mcqs", [])
-#     except Exception:
-#         # Try to extract JSON from the response if not directly parsable
-#         import re
-#         match = re.search(r'\{[\s\S]*\}', extracted_response)
-#         if match:
-#             mcqs = json.loads(match.group()).get("mcqs", [])
-#         else:
-#             mcqs = []
-#     return mcqs
-
-# Generating quiz with OpenRouter AI Models
-def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+# Unified generate_mcqs function with AI model selection
+def generate_mcqs(text_content, quiz_level):
+    """
+    Generate quiz from text content using the selected AI model based on AI_MODEL_IN_USE environment variable.
+    """
+    start_time = time.time()
+    logger.info(f"Starting quiz generation using AI model: {AI_MODEL_IN_USE.upper()}")
     RESPONSE_JSON = {
       "mcqs" : [
         {
@@ -576,198 +514,135 @@ def generate_mcqs(text_content, quiz_level, AI_MODEL_API_KEY=AI_MODEL_API_KEY, m
     G3: All distractors (incorrect options) must be plausible and relevant to the context of the question but clearly incorrect based on the input text.
     G4: The questions and options MUST be in the same language as the input text.
     G5: Do not repeat questions or test the exact same concept multiple times.
+    (CRITICAL!) You MUST respond in the EXACT SAME LANGUAGE as the input text. Do not translate or change languages.
     Make sure to format your response like RESPONSE_JSON below and use it as a guide.
     Ensure to make an array of 5 MCQs referring the following response json.
-
-    Provide quiz in the original language of the original text.
 
     Here is the RESPONSE_JSON: 
 
     {json.dumps(RESPONSE_JSON, indent=2)}
     """
 
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": PROMPT_TEMPLATE}
-        ],
-        "temperature": 0.3,
-        "max_tokens": 10000,
-        "top_p": 1,
-        "frequency_penalty": 0,
-        "presence_penalty": 0
-    }
-
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-
-    if response.status_code != 200:
-        raise Exception(f"Request failed: {response.status_code} {response.text}")
-
-    try:
-        content = response.json()["choices"][0]["message"]["content"]
-        # Try parsing directly
-        mcqs = json.loads(content).get("mcqs", [])
-    except Exception:
-        # Try extracting JSON if extra explanation text is included
-        match = re.search(r'\{[\s\S]*\}', content)
-        if match:
-            try:
-                mcqs = json.loads(match.group()).get("mcqs", [])
-            except:
+    def parse_mcqs_response(content):
+        """Helper function to parse MCQs from response content"""
+        try:
+            # Try parsing directly
+            mcqs = json.loads(content).get("mcqs", [])
+        except Exception:
+            # Try extracting JSON if extra explanation text is included
+            match = re.search(r'\{[\s\S]*\}', content)
+            if match:
+                try:
+                    mcqs = json.loads(match.group()).get("mcqs", [])
+                except:
+                    mcqs = []
+            else:
                 mcqs = []
+        return mcqs
+
+    if AI_MODEL_IN_USE == 'openai':
+        if not OPENAI_API_KEY:
+            raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
+        
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant. You MUST always respond in the same language as the input text provided by the user. Do not translate or change languages."},
+                {"role": "user", "content": PROMPT_TEMPLATE}
+            ],
+            temperature=0.3,
+            max_tokens=1000,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0
+        )
+        content = response.choices[0].message.content
+        result = parse_mcqs_response(content)
+    
+    elif AI_MODEL_IN_USE == 'helpy':
+        if not HELPY_API_KEY:
+            raise Exception('Helpy API key not set in HELPY_API_KEY env variable')
+        
+        url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
+        payload = {
+            "model": "helpy-v-reasoning-c",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": PROMPT_TEMPLATE
+                        }
+                    ]
+                }
+            ],
+        }
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "Authorization": f"Bearer {HELPY_API_KEY}"
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 200:
+            content = response.json()["choices"][0]["message"]["content"]
+            result = parse_mcqs_response(content)
         else:
-            mcqs = []
-
-    return mcqs
-
-# Ask questions about transcription using Helpy LLM with conversation memory
-# def ask_question_about_transcription_helpy(transcription, question, conversation_history=None, API_KEY=HELPY_API_KEY, model="helpy-v-reasoning-c"):
-#     """
-#     Ask a question about a transcription using Helpy LLM API with conversation memory.
+            raise Exception(f"Error {response.status_code}: {response.text}")
     
-#     Args:
-#         transcription (str): The transcription text to use as context
-#         question (str): The user's question
-#         conversation_history (list): List of previous Q&A pairs for context
-#         API_KEY (str): Helpy API key
-#         model (str): Helpy model name
+    elif AI_MODEL_IN_USE == 'openrouter':
+        if not AI_MODEL_API_KEY:
+            raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
         
-#     Returns:
-#         str: The AI's answer to the question
-#     """
-#     url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {AI_MODEL_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": AI_MODEL_NAME,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant. You MUST always respond in the same language as the input text provided by the user. Do not translate or change languages."},
+                {"role": "user", "content": PROMPT_TEMPLATE}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 10000,
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            content = response.json()["choices"][0]["message"]["content"]
+            result = parse_mcqs_response(content)
+        else:
+            raise Exception(f"Error {response.status_code}: {response.text}")
     
-#     # Build conversation context
-#     conversation_context = ""
-#     if conversation_history and len(conversation_history) > 0:
-#         conversation_context = "\n\nPrevious conversation:\n"
-#         for i, qa in enumerate(conversation_history[-5:], 1):  # Keep last 5 Q&A pairs for context
-#             conversation_context += f"Q{i}: {qa['question']}\n"
-#             conversation_context += f"A{i}: {qa['answer']}\n\n"
+    else:
+        raise Exception(f'Unsupported AI model: {AI_MODEL_IN_USE}. Supported values: openai, helpy, openrouter')
     
-#     prompt = (
-#         f"You are a helpful assistant that answers questions based on a meeting transcript. "
-#         f"Please answer the following question based on the transcript provided below. "
-#         f"Only use information that is explicitly mentioned in the transcript. "
-#         f"If the answer cannot be found in the transcript, say so clearly. "
-#         f"Provide a clear, concise, and accurate answer.\n\n"
-#         f"Provide the answer in the original language of the original text. "
-#         f"Meeting Transcript:\n{transcription}\n"
-#         f"{conversation_context}"
-#         f"Current Question: {question}\n\n"
-#         f"Answer:"
-#     )
+    end_time = time.time()
+    processing_time = end_time - start_time
+    logger.info(f"Quiz generation completed in {processing_time:.2f} seconds using {AI_MODEL_IN_USE.upper()}")
     
-#     payload = {
-#         "model": model,
-#         "messages": [
-#             {
-#                 "role": "user",
-#                 "content": [
-#                     {
-#                         "type": "text",
-#                         "text": prompt
-#                     }
-#                 ]
-#             }
-#         ],
-#     }
-    
-#     headers = {
-#         "accept": "application/json",
-#         "content-type": "application/json",
-#         "Authorization": f"Bearer {API_KEY}"
-#     }
-    
-#     response = requests.post(url, json=payload, headers=headers)
-#     if response.status_code == 200:
-#         result = response.json()
-#         return result["choices"][0]["message"]["content"].strip()
-#     else:
-#         raise Exception(f"Error {response.status_code}: {response.text}")
+    return result
 
-# Uncomment if want to use OpenAI instead (paid method)
-# Ask questions about transcription using OpenAI with conversation memory
-# def ask_question_about_transcription_openai(transcription, question, conversation_history=None, api_key=OPENAI_API_KEY, model=OPENAI_MODEL):
-#     """
-#     Ask a question about a transcription using OpenAI API with conversation memory.
-    
-#     Args:
-#         transcription (str): The transcription text to use as context
-#         question (str): The user's question
-#         conversation_history (list): List of previous Q&A pairs for context
-#         api_key (str): OpenAI API key
-#         model (str): OpenAI model name
-        
-#     Returns:
-#         str: The AI's answer to the question
-#     """
-#     if not api_key:
-#         raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
-    
-#     client = openai.OpenAI(api_key=api_key)
-    
-#     # Build conversation context
-#     conversation_context = ""
-#     if conversation_history and len(conversation_history) > 0:
-#         conversation_context = "\n\nPrevious conversation:\n"
-#         for i, qa in enumerate(conversation_history[-5:], 1):  # Keep last 5 Q&A pairs for context
-#             conversation_context += f"Q{i}: {qa['question']}\n"
-#             conversation_context += f"A{i}: {qa['answer']}\n\n"
-    
-#     prompt = (
-#         f"You are a helpful assistant that answers questions based on a meeting transcript. "
-#         f"Please answer the following question based on the transcript provided below. "
-#         f"Only use information that is explicitly mentioned in the transcript. "
-#         f"If the answer cannot be found in the transcript, say so clearly. "
-#         f"Provide a clear, concise, and accurate answer.\n\n"
-#         f"Provide the answer in the original language of the original text. "
-#         f"Meeting Transcript:\n{transcription}\n"
-#         f"{conversation_context}"
-#         f"Current Question: {question}\n\n"
-#         f"Answer:"
-#     )
-    
-#     response = client.chat.completions.create(
-#         model=model,
-#         messages=[
-#             {"role": "system", "content": "You are a helpful assistant."},
-#             {"role": "user", "content": prompt}
-#         ],
-#         max_tokens=1000,
-#         temperature=0.3,
-#     )
-    
-#     return response.choices[0].message.content.strip()
-
-# Uncomment if want to use OpenRouter AI Models (free but slow)
-# Ask questions about transcription using OpenRouter with conversation memory
-def ask_question_about_transcription(transcription, question, conversation_history=None, AI_MODEL_API_KEY=AI_MODEL_API_KEY, model=AI_MODEL_NAME):
+# Unified ask_question_about_transcription function with AI model selection
+def ask_question_about_transcription(transcription, question, conversation_history=None):
     """
-    Ask a question about a transcription using OpenRouter AI Models with conversation memory.
+    Ask a question about a transcription using the selected AI model based on AI_MODEL_IN_USE environment variable.
     
     Args:
         transcription (str): The transcription text to use as context
         question (str): The user's question
         conversation_history (list): List of previous Q&A pairs for context
-        AI_MODEL_API_KEY (str): OpenRouter API key
-        model (str): OpenRouter model name
         
     Returns:
         str: The AI's answer to the question
     """
-    
-    if not AI_MODEL_API_KEY:
-        raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
-    
-    url = "https://openrouter.ai/api/v1/chat/completions"
+    start_time = time.time()
+    logger.info(f"Starting question answering using AI model: {AI_MODEL_IN_USE.upper()}")
     
     # Build conversation context
     conversation_context = ""
@@ -783,35 +658,93 @@ def ask_question_about_transcription(transcription, question, conversation_histo
         f"Only use information that is explicitly mentioned in the transcript. "
         f"If the answer cannot be found in the transcript, say so clearly. "
         f"Provide a clear, concise, and accurate answer.\n\n"
-        f"Provide the answer in the original language of the original text. "
+        f"(CRITICAL!) You MUST respond in the EXACT SAME LANGUAGE as the input text. Do not translate or change languages."
         f"Meeting Transcript:\n{transcription}\n"
         f"{conversation_context}"
         f"Current Question: {question}\n\n"
         f"Answer:"
     )
+
+    if AI_MODEL_IN_USE == 'openai':
+        if not OPENAI_API_KEY:
+            raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
+        
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant. You MUST always respond in the same language as the input text provided by the user. Do not translate or change languages."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000,
+            temperature=0.3,
+        )
+        result = response.choices[0].message.content.strip()
     
-    headers = {
-        "Authorization": f"Bearer {AI_MODEL_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    elif AI_MODEL_IN_USE == 'helpy':
+        if not HELPY_API_KEY:
+            raise Exception('Helpy API key not set in HELPY_API_KEY env variable')
+        
+        url = "https://mlapi.run/9331793d-efda-4839-8f97-ff66f7eaf605/v1/chat/completions"
+        payload = {
+            "model": "helpy-v-reasoning-c",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+        }
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "Authorization": f"Bearer {HELPY_API_KEY}"
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 200:
+            result = response.json()
+            result = result["choices"][0]["message"]["content"].strip()
+        else:
+            raise Exception(f"Error {response.status_code}: {response.text}")
     
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.3,
-        "max_tokens": 1000
-    }
+    elif AI_MODEL_IN_USE == 'openrouter':
+        if not AI_MODEL_API_KEY:
+            raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
+        
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {AI_MODEL_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": AI_MODEL_NAME,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant. You MUST always respond in the same language as the input text provided by the user. Do not translate or change languages."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 1000
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            result = response.json()
+            result = result["choices"][0]["message"]["content"].strip()
+        else:
+            raise Exception(f"Error {response.status_code}: {response.text}")
     
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    
-    if response.status_code == 200:
-        result = response.json()
-        return result["choices"][0]["message"]["content"].strip()
     else:
-        raise Exception(f"Error {response.status_code}: {response.text}")
+        raise Exception(f'Unsupported AI model: {AI_MODEL_IN_USE}. Supported values: openai, helpy, openrouter')
+    
+    end_time = time.time()
+    processing_time = end_time - start_time
+    logger.info(f"Question answering completed in {processing_time:.2f} seconds using {AI_MODEL_IN_USE.upper()}")
+    
+    return result
 
 
 # Helper function to summarize and save to MongoDB
@@ -841,30 +774,43 @@ def summarize_and_save(mongo_id):
 @app.route('/summarize_transcription', methods=['POST'])
 def summarize_transcription():
     """Summarize a transcription from MongoDB by _id and save the summary back to the same document."""
+    start_time = time.time()
+    logger.info("API: /summarize_transcription endpoint called")
+    
     try:
         data = request.get_json()
         mongo_id = data.get('_id')
         if not mongo_id:
+            logger.error("API: /summarize_transcription - No _id provided")
             return jsonify({'error': 'No _id provided'}), 400
         if mongo_collection is None:
+            logger.error("API: /summarize_transcription - MongoDB not configured")
             return jsonify({'error': 'MongoDB not configured'}), 500
         doc = mongo_collection.find_one({'_id': ObjectId(mongo_id)})
         if not doc:
+            logger.error(f"API: /summarize_transcription - No document found for _id: {mongo_id}")
             return jsonify({'error': f'No document found for _id: {mongo_id}'}), 404
         transcription = doc.get('transcription')
         if not transcription:
+            logger.error("API: /summarize_transcription - No transcription found in document")
             return jsonify({'error': 'No transcription found in document'}), 400
         max_chars = 50000
         if len(transcription) > max_chars:
             transcription = transcription[:max_chars]
         summary = summarize_text(transcription)
         mongo_collection.update_one({'_id': ObjectId(mongo_id)}, {'$set': {'summary': summary}})
+        
+        end_time = time.time()
+        processing_time = end_time - start_time
+        logger.info(f"API: /summarize_transcription completed in {processing_time:.2f} seconds")
+        
         return jsonify({
             '_id': mongo_id, 
             'transcription': transcription,
             'summary': summary
         })
     except Exception as e:
+        logger.error(f"API: /summarize_transcription error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/youtube_subtitle_transcribe', methods=['POST'])
@@ -943,53 +889,74 @@ def video_to_audio_transcribe():
 @app.route('/generate_quiz', methods=['POST'])
 def generate_quiz():
     """Generate quiz from transcription in MongoDB by _id and quiz_level, and save to the document."""
+    start_time = time.time()
+    logger.info("API: /generate_quiz endpoint called")
+    
     try:
         data = request.get_json()
         mongo_id = data.get('_id')
         quiz_level = data.get('quiz_level')
         if not mongo_id or not quiz_level:
+            logger.error("API: /generate_quiz - Both _id and quiz_level are required")
             return jsonify({'error': 'Both _id and quiz_level are required'}), 400
         if mongo_collection is None:
+            logger.error("API: /generate_quiz - MongoDB not configured")
             return jsonify({'error': 'MongoDB not configured'}), 500
         doc = mongo_collection.find_one({'_id': ObjectId(mongo_id)})
         if not doc:
+            logger.error(f"API: /generate_quiz - No document found for _id: {mongo_id}")
             return jsonify({'error': f'No document found for _id: {mongo_id}'}), 404
         transcription = doc.get('transcription')
         if not transcription:
+            logger.error("API: /generate_quiz - No transcription found in document")
             return jsonify({'error': 'No transcription found in document'}), 400
         mcqs = generate_mcqs(transcription, quiz_level)
         mongo_collection.update_one({'_id': ObjectId(mongo_id)}, {'$set': {'mcqs': mcqs}})
+        
+        end_time = time.time()
+        processing_time = end_time - start_time
+        logger.info(f"API: /generate_quiz completed in {processing_time:.2f} seconds")
+        
         return jsonify({
             '_id': mongo_id, 
             'transcription': transcription,
             'mcqs': mcqs
         })
     except Exception as e:
+        logger.error(f"API: /generate_quiz error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/ask_question', methods=['POST'])
 def ask_question():
     """Ask a question about a transcription stored in MongoDB by _id with conversation memory."""
+    start_time = time.time()
+    logger.info("API: /ask_question endpoint called")
+    
     try:
         data = request.get_json()
         mongo_id = data.get('_id')
         question = data.get('question')
         
         if not mongo_id or not question:
+            logger.error("API: /ask_question - Both _id and question are required")
             return jsonify({'error': 'Both _id and question are required'}), 400
         
         if mongo_collection is None:
+            logger.error("API: /ask_question - MongoDB not configured")
             return jsonify({'error': 'MongoDB not configured'}), 500
         
         if chat_logs_collection is None:
+            logger.error("API: /ask_question - Chat logs collection not configured")
             return jsonify({'error': 'Chat logs collection not configured'}), 500
         
         doc = mongo_collection.find_one({'_id': ObjectId(mongo_id)})
         if not doc:
+            logger.error(f"API: /ask_question - No document found for _id: {mongo_id}")
             return jsonify({'error': f'No document found for _id: {mongo_id}'}), 404
         
         transcription = doc.get('transcription')
         if not transcription:
+            logger.error("API: /ask_question - No transcription found in document")
             return jsonify({'error': 'No transcription found in document'}), 400
         
         # Get conversation history for this transcription
@@ -1016,6 +983,10 @@ def ask_question():
         # Save the chat log to the chat_logs collection
         chat_log_id = save_chat_log_to_mongodb(mongo_id, question, answer)
         
+        end_time = time.time()
+        processing_time = end_time - start_time
+        logger.info(f"API: /ask_question completed in {processing_time:.2f} seconds")
+        
         return jsonify({
             '_id': mongo_id,
             'transcription': transcription,
@@ -1025,6 +996,7 @@ def ask_question():
             'conversation_history_count': len(conversation_history)
         })
     except Exception as e:
+        logger.error(f"API: /ask_question error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get_chat_history', methods=['POST'])
@@ -1059,4 +1031,6 @@ def get_chat_history():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
+    logger.info(f"Starting AI Backend with AI model: {AI_MODEL_IN_USE.upper()}")
+    logger.info(f"Server will run on http://0.0.0.0:6969")
     app.run(debug=True, host='0.0.0.0', port=6969)

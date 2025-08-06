@@ -108,19 +108,6 @@ def save_chat_log_to_mongodb(transcription_id, question, answer):
     return None
 
 # Helper function to format transcript for LLM
-# Without timestamp
-# def format_transcript(transcript_data):
-#     """
-#     Given a list of transcript segments (from YouTubeTranscriptApi),
-#     return a single string suitable for OpenAI input.
-#     """
-#     if len(transcript_data) == 0:
-#         return ""
-#     if isinstance(transcript_data[0], dict):
-#         return " ".join([snippet['text'] for snippet in transcript_data])
-#     else:
-#         return " ".join([snippet.text for snippet in transcript_data])
-
 # Including timestamp
 def format_transcript(transcript_data):
     """
@@ -239,6 +226,7 @@ async def transcribe_audio_file_async(filename, language='en'):
 
         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
 
+        # Returns "start", "end", "text"
         transcript = await client.audio.transcriptions.create(
             model="whisper-1",
             file=(filename, audio_data),
@@ -248,11 +236,14 @@ async def transcribe_audio_file_async(filename, language='en'):
         )
 
         # Helper functions
+        # Convert seconds to MM:SS format
         def format_time(seconds):
             minutes = int(seconds) // 60
             secs = int(seconds) % 60
             return f"{minutes:02d}:{secs:02d}"
 
+        # Format segments with timestamps
+        # Returns ["[00:00 - 00:05] Indomie Goreng", "[00:05 - 00:10] Sigma"]
         def format_segments(segments):
             lines = []
             for seg in segments:
@@ -318,6 +309,8 @@ def summarize_text(text):
         "\n\nMeeting transcript:\n" + text
     )
 
+    # Choosing models for summarization based on AI_MODEL_IN_USE in .env file
+    # OpenAI
     if AI_MODEL_IN_USE == 'openai':
         if not OPENAI_API_KEY:
             raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
@@ -334,6 +327,7 @@ def summarize_text(text):
         )
         result = response.choices[0].message.content.strip()
     
+    # Helpy
     elif AI_MODEL_IN_USE == 'helpy':
         if not HELPY_API_KEY:
             raise Exception('Helpy API key not set in HELPY_API_KEY env variable')
@@ -365,10 +359,11 @@ def summarize_text(text):
         else:
             raise Exception(f"Error {response.status_code}: {response.text}")
     
+    # OpenRouter
     elif AI_MODEL_IN_USE == 'openrouter':
         if not AI_MODEL_API_KEY:
             raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
-        
+
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {AI_MODEL_API_KEY}",
@@ -388,7 +383,7 @@ def summarize_text(text):
             result = result["choices"][0]["message"]["content"].strip()
         else:
             raise Exception(f"Error {response.status_code}: {response.text}")
-    
+
     else:
         raise Exception(f'Unsupported AI model: {AI_MODEL_IN_USE}. Supported values: openai, helpy, openrouter')
     
@@ -401,7 +396,7 @@ def summarize_text(text):
 
 
 
-# Unified generate_mcqs function with AI model selection
+# Generate_mcqs function with AI model selection
 def generate_mcqs(text_content, quiz_level):
     """
     Generate quiz from text content using the selected AI model based on AI_MODEL_IN_USE environment variable.
@@ -479,6 +474,8 @@ def generate_mcqs(text_content, quiz_level):
                 mcqs = []
         return mcqs
 
+    # Choosing models for quiz generation based on AI_MODEL_IN_USE in .env file
+    # OpenAI
     if AI_MODEL_IN_USE == 'openai':
         if not OPENAI_API_KEY:
             raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
@@ -499,6 +496,7 @@ def generate_mcqs(text_content, quiz_level):
         content = response.choices[0].message.content
         result = parse_mcqs_response(content)
     
+    # Helpy
     elif AI_MODEL_IN_USE == 'helpy':
         if not HELPY_API_KEY:
             raise Exception('Helpy API key not set in HELPY_API_KEY env variable')
@@ -530,6 +528,7 @@ def generate_mcqs(text_content, quiz_level):
         else:
             raise Exception(f"Error {response.status_code}: {response.text}")
     
+    # OpenRouter
     elif AI_MODEL_IN_USE == 'openrouter':
         if not AI_MODEL_API_KEY:
             raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
@@ -567,7 +566,7 @@ def generate_mcqs(text_content, quiz_level):
     
     return result
 
-# Unified ask_question_about_transcription function with AI model selection
+# Ask_question_about_transcription function with AI model selection
 def ask_question_about_transcription(transcription, question, conversation_history=None):
     """
     Ask a question about a transcription using the selected AI model based on AI_MODEL_IN_USE environment variable.
@@ -603,7 +602,9 @@ def ask_question_about_transcription(transcription, question, conversation_histo
         f"Current Question: {question}\n\n"
         f"Answer:"
     )
-
+    
+    # Choosing models for question answering based on AI_MODEL_IN_USE in .env file
+    # OpenAI
     if AI_MODEL_IN_USE == 'openai':
         if not OPENAI_API_KEY:
             raise Exception('OpenAI API key not set in OPENAI_API_KEY env variable')
@@ -620,6 +621,7 @@ def ask_question_about_transcription(transcription, question, conversation_histo
         )
         result = response.choices[0].message.content.strip()
     
+    # Helpy
     elif AI_MODEL_IN_USE == 'helpy':
         if not HELPY_API_KEY:
             raise Exception('Helpy API key not set in HELPY_API_KEY env variable')
@@ -651,6 +653,7 @@ def ask_question_about_transcription(transcription, question, conversation_histo
         else:
             raise Exception(f"Error {response.status_code}: {response.text}")
     
+    # OpenRouter
     elif AI_MODEL_IN_USE == 'openrouter':
         if not AI_MODEL_API_KEY:
             raise Exception('OpenRouter API key not set in AI_MODEL_API_KEY env variable')
